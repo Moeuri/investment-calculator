@@ -1,37 +1,35 @@
 import { useState, useCallback } from 'react'
-import DCATab   from './tabs/DCATab'
-import InsTab   from './tabs/InsTab'
-import CrashTab from './tabs/CrashTab'
-import InflTab  from './tabs/InflTab'
-import DrawTab  from './tabs/DrawTab'
-import DivTab   from './tabs/DivTab'
-import AboutTab from './tabs/AboutTab'
+import DCATab     from './tabs/DCATab'
+import CompareTab from './tabs/CompareTab'
+import CrashTab   from './tabs/CrashTab'
+import InflTab    from './tabs/InflTab'
+import DrawTab    from './tabs/DrawTab'
+import DivTab     from './tabs/DivTab'
+import InsTab     from './tabs/InsTab'
+import AboutTab   from './tabs/AboutTab'
 
 const TABS = [
-  { id: 'dca',   label: '📈 定期定額'    },
-  { id: 'ins',   label: '🏦 保險 vs 股市' },
-  { id: 'crash', label: '💥 崩盤模擬'    },
-  { id: 'infl',  label: '💰 通膨購買力'  },
-  { id: 'draw',  label: '🏖️ 退休提領'    },
-  { id: 'div',   label: '🎯 高股息ETF'   },
-  { id: 'about', label: 'ℹ️ 關於'         },
+  { id: 'dca',     label: '📈 定期定額'         },
+  { id: 'compare', label: '⚖️ 0050 vs 009816'   },
+  { id: 'crash',   label: '💥 崩盤模擬'          },
+  { id: 'infl',    label: '💰 通膨購買力'        },
+  { id: 'draw',    label: '🏖️ 退休提領'          },
+  { id: 'div',     label: '🎯 高股息ETF'         },
+  { id: 'ins',     label: '🏦 保險 vs 股市'      },
+  { id: 'about',   label: 'ℹ️ 關於'              },
 ]
 
 const INIT = {
-  // 定期定額
   amt:         200000,
   lumpSum:     0,
   per:         36,
   dr:          0.08,
   tax:         0,
-  // 通膨
   infl:        0.02,
-  // 退休提領
   drawMo:      50000,
   drawRate:    0.08,
   retireAfter: 20,
   drawYears:   25,
-  // 高股息
   dvTotal:     150000,
   dvW:         [40, 30, 30],
   dvTarget:    50000,
@@ -54,7 +52,7 @@ export default function App() {
       }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.4 · Huang Yen-han</div>
+          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.5 · Huang Yen-han</div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--c-text3)', textAlign: 'right', lineHeight: 1.5 }}>
           每月投入 {(state.amt/10000).toFixed(1)}萬<br />
@@ -83,13 +81,14 @@ export default function App() {
       </div>
 
       {/* Tab Content */}
-      {tab === 'dca'   && <DCATab   state={state} set={set} />}
-      {tab === 'ins'   && <InsTab   state={state} set={set} />}
-      {tab === 'crash' && <CrashTab state={state} set={set} />}
-      {tab === 'infl'  && <InflTab  state={state} set={set} />}
-      {tab === 'draw'  && <DrawTab  state={state} set={set} />}
-      {tab === 'div'   && <DivTab   state={state} set={set} />}
-      {tab === 'about' && <AboutTab />}
+      {tab === 'dca'     && <DCATab     state={state} set={set} />}
+      {tab === 'compare' && <CompareTab />}
+      {tab === 'crash'   && <CrashTab   state={state} set={set} />}
+      {tab === 'infl'    && <InflTab    state={state} set={set} />}
+      {tab === 'draw'    && <DrawTab    state={state} set={set} />}
+      {tab === 'div'     && <DivTab     state={state} set={set} />}
+      {tab === 'ins'     && <InsTab     state={state} set={set} />}
+      {tab === 'about'   && <AboutTab />}
     </div>
   )
 }

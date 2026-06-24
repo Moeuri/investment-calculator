@@ -133,7 +133,7 @@ export default function DivTab({ state, set }) {
           }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text)', marginBottom: 2 }}>{etf.code}</div>
             <div style={{ fontSize: 11, color: 'var(--c-text3)', marginBottom: 8 }}>{etf.name}｜{etf.freq}｜殖利率{(etf.yield10yr*100).toFixed(0)}%</div>
-            <div style={{ fontSize: 11, color: 'var(--c-text3)' }}>配息月：{etf.divMonths.join('/')月</div>
+            <div style={{ fontSize: 11, color: 'var(--c-text3)' }}>配息月：{etf.divMonths.join('/')}月</div>
             <div style={{ marginTop: 6 }}>
               <div style={{ fontSize: 11, color: 'var(--c-text3)' }}>投入</div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{fmtM(dvAmts[i])}</div>

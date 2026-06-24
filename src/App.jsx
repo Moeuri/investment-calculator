@@ -45,7 +45,7 @@ export default function App() {
       }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.2 · 009816 / 0050 / 高股息ETF</div>
+          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.3 · 009816 / 0050 / 高股息ETF</div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--c-text3)', textAlign: 'right', lineHeight: 1.5 }}>
           每月投入 {(state.amt/10000).toFixed(1)}萬<br />

@@ -5,6 +5,7 @@ import CrashTab from './tabs/CrashTab'
 import InflTab  from './tabs/InflTab'
 import DrawTab  from './tabs/DrawTab'
 import DivTab   from './tabs/DivTab'
+import AboutTab from './tabs/AboutTab'
 
 const TABS = [
   { id: 'dca',   label: '📈 定期定額'    },
@@ -13,24 +14,32 @@ const TABS = [
   { id: 'infl',  label: '💰 通膨購買力'  },
   { id: 'draw',  label: '🏖️ 退休提領'    },
   { id: 'div',   label: '🎯 高股息ETF'   },
+  { id: 'about', label: 'ℹ️ 關於'         },
 ]
 
 const INIT = {
-  amt:      200000,
-  per:      36,
-  dr:       0.105,
-  tax:      0,
-  infl:     0.02,
-  drawMo:   50000,
-  drawRate: 0.08,
-  dvTotal:  150000,
-  dvW:      [40, 30, 30],
-  dvTarget: 50000,
+  // 定期定額
+  amt:         200000,
+  lumpSum:     0,
+  per:         36,
+  dr:          0.08,
+  tax:         0,
+  // 通膨
+  infl:        0.02,
+  // 退休提領
+  drawMo:      50000,
+  drawRate:    0.08,
+  retireAfter: 20,
+  drawYears:   25,
+  // 高股息
+  dvTotal:     150000,
+  dvW:         [40, 30, 30],
+  dvTarget:    50000,
 }
 
 export default function App() {
-  const [tab,      setTab]      = useState('dca')
-  const [state,    setState]    = useState(INIT)
+  const [tab,   setTab]   = useState('dca')
+  const [state, setState] = useState(INIT)
 
   const set = useCallback((key, val) => {
     setState(prev => ({ ...prev, [key]: val }))
@@ -45,7 +54,7 @@ export default function App() {
       }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.3 · 009816 / 0050 / 高股息ETF</div>
+          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.4 · Huang Yen-han</div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--c-text3)', textAlign: 'right', lineHeight: 1.5 }}>
           每月投入 {(state.amt/10000).toFixed(1)}萬<br />
@@ -80,15 +89,7 @@ export default function App() {
       {tab === 'infl'  && <InflTab  state={state} set={set} />}
       {tab === 'draw'  && <DrawTab  state={state} set={set} />}
       {tab === 'div'   && <DivTab   state={state} set={set} />}
-
-      {/* Footer */}
-      <div style={{
-        marginTop: 32, paddingTop: 12, borderTop: '0.5px solid var(--c-border)',
-        fontSize: 11, color: 'var(--c-text3)', lineHeight: 1.6,
-      }}>
-        本計算器僅供個人試算參考，不構成投資建議。報酬率均為歷史估算，未來不保證相同。
-        高股息ETF殖利率採歷史均值，實際配息依各投信公告為準。
-      </div>
+      {tab === 'about' && <AboutTab />}
     </div>
   )
 }

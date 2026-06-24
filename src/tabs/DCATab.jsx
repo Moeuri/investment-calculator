@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { Card, Note, Slider, PhaseBar, SectionTitle, InvestChart, Legend } from '../components'
-import { buildNorm, fmtM, fmtPA, EXP0, EXP1, DIV, TH } from '../utils'
+import { Card, Note, Slider, PhaseBar, SectionTitle, InvestChart, Legend, Divider } from '../components'
+import { fmtM, fmtPA, EXP0, EXP1, DIV, TH } from '../utils'
 
 const TAX_OPTS = [
   { v: 0,    label: '免稅' },
@@ -20,11 +20,10 @@ const DR_PRESETS = [
   { v: 0.18,  label: '賭性狂徒 18%',   tag: '2020疫情低點後AI行情', note: '錨點：0050從2020年3月疫情低點至2024年底，含息年化約18–22%。疫情後流動性寬鬆、AI題材爆發、台積電全球定價權確立三重因素疊加的歷史最強多頭區段。幾乎不可能長期持續，僅供極端樂觀壓力測試。' },
 ]
 
-// 建立含一次性投入的序列
 function buildWithLumpSum(lumpSum, amt, per, annR) {
   const mr = annR / 12
   const out = new Float64Array(241)
-  let v = lumpSum  // 第0月立刻投入
+  let v = lumpSum || 0
   for (let mo = 1; mo <= 240; mo++) {
     v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
     out[mo] = v
@@ -32,23 +31,50 @@ function buildWithLumpSum(lumpSum, amt, per, annR) {
   return out
 }
 
+// 0050 配息現金流累積（不再投入）
+function build0050CashFlow(lumpSum, amt, per, annR, reinvestRate) {
+  const mr = annR / 12
+  const divYield = DIV  // 年化配息率
+  const out = new Float64Array(241)  // 帳面資產（不含已領配息）
+  const cashOut = new Float64Array(241) // 累積已領出配息
+  let v = lumpSum || 0
+  let totalCash = 0
+
+  for (let mo = 1; mo <= 240; mo++) {
+    if (mo <= per) v = (v + amt) * (1 + mr)
+    else v = v * (1 + mr)
+
+    // 每半年配息（1月=第1,13,25...月，7月=第7,19,31...月 → 簡化為每6個月）
+    if (mo % 6 === 0) {
+      const divAmt = v * (divYield / 2)
+      const netDiv = divAmt * (1 - reinvestRate)  // 未再投入的部分領出
+      const reinvest = divAmt * reinvestRate       // 再投入的部分
+      totalCash += netDiv
+      v -= divAmt   // 除息
+      v += reinvest // 再投入部分買回
+    }
+    out[mo] = v
+    cashOut[mo] = totalCash
+  }
+  return { asset: out, cash: cashOut }
+}
+
 export default function DCATab({ state, set }) {
-  const { amt, per, dr, tax, lumpSum } = state
-  const r1  = dr + 0.01 - EXP1
-  const r0t = dr - EXP0 - DIV * (tax + TH)
-  const cost = (lumpSum || 0) + amt * per
+  const { amt, per, dr, tax, lumpSum, reinvestRate } = state
+  const r1   = dr + 0.01 - EXP1
+  const r0t  = dr - EXP0 - DIV * (tax + TH)
+  const ls   = lumpSum || 0
+  const rr   = reinvestRate !== undefined ? reinvestRate : 1  // 預設100%再投入
+  const cost = ls + amt * per
 
   const activePreset = DR_PRESETS.find(p => p.v === dr)
-  const ls = lumpSum || 0
 
-  const { norm1, norm0, normLS1, normLS0 } = useMemo(() => ({
-    norm1:   buildWithLumpSum(ls, amt, per, r1),
-    norm0:   buildWithLumpSum(ls, amt, per, r0t),
-    normLS1: ls > 0 ? buildWithLumpSum(0, amt, per, r1)  : null,
-    normLS0: ls > 0 ? buildWithLumpSum(0, amt, per, r0t) : null,
-  }), [ls, amt, per, r1, r0t])
+  const { norm9816, norm0050, cash0050 } = useMemo(() => {
+    const norm9816 = buildWithLumpSum(ls, amt, per, r1)
+    const { asset: norm0050, cash: cash0050 } = build0050CashFlow(ls, amt, per, r0t, rr)
+    return { norm9816, norm0050, cash0050 }
+  }, [ls, amt, per, r1, r0t, rr])
 
-  // 模式說明文字
   const modeDesc = (() => {
     if (ls === 0 && amt > 0)  return `純定期定額：每月 ${fmtM(amt)}，共 ${per} 期，總投入 ${fmtM(amt * per)}`
     if (ls > 0  && amt === 0) return `純一次性投入：今日投入 ${fmtM(ls)}，之後持有複利，無定期扣款`
@@ -56,25 +82,32 @@ export default function DCATab({ state, set }) {
     return '請設定投入金額'
   })()
 
+  const showCashFlow = rr < 1  // 只有部分再投入時才顯示現金流線
+
   const chartData = useMemo(() => {
     return Array.from({ length: 20 }, (_, i) => {
       const y = i + 1, mo = y * 12
       const row = {
-        year:    `${y}年`,
-        '009816': Math.round(norm1[mo]),
-        '0050':   Math.round(norm0[mo]),
+        year:     `${y}年`,
+        '009816': Math.round(norm9816[mo]),
+        '0050帳面資產': Math.round(norm0050[mo]),
         '總投入': Math.round(Math.min(cost, ls + amt * mo)),
       }
-      if (ls > 0) {
-        row['009816（無一次性）'] = Math.round(normLS1[mo])
+      if (showCashFlow) {
+        row['0050累積已領配息'] = Math.round(cash0050[mo])
       }
       return row
     })
-  }, [norm1, norm0, normLS1, cost, ls, amt])
+  }, [norm9816, norm0050, cash0050, cost, ls, amt, showCashFlow])
 
   const perLabel = per % 12 === 0
     ? `${per}期（${per/12}年）`
     : `${per}期（${Math.floor(per/12)}年${per%12}個月）`
+
+  // 20年累積已領配息
+  const totalCashReceived = cash0050[240]
+  // 0050 20年「總回報」= 帳面資產 + 累積已領配息
+  const total0050 = norm0050[240] + totalCashReceived
 
   return (
     <div>
@@ -88,7 +121,6 @@ export default function DCATab({ state, set }) {
         value={amt} onChange={v => set('amt', v)}
         fmt={v => v === 0 ? '0（純一次性）' : v.toLocaleString() + ' 元'} />
 
-      {/* 模式說明 */}
       <div style={{ fontSize: 12, color: 'var(--c-text3)', background: 'var(--c-bg2)', borderRadius: 6, padding: '7px 10px', marginBottom: 10 }}>
         📋 {modeDesc}
       </div>
@@ -98,6 +130,8 @@ export default function DCATab({ state, set }) {
           value={per} onChange={v => set('per', v)}
           fmt={v => v % 12 === 0 ? `${v}期（${v/12}年）` : `${v}期（${Math.floor(v/12)}年${v%12}個月）`} />
       )}
+
+      <Divider />
 
       {/* 報酬率六檔 */}
       <div style={{ marginBottom: 12 }}>
@@ -139,31 +173,45 @@ export default function DCATab({ state, set }) {
         </div>
       </div>
 
+      {/* 0050 再投入效率 */}
+      <Slider label="0050配息再投入效率" min={0} max={100} step={5}
+        value={Math.round(rr * 100)} onChange={v => set('reinvestRate', v / 100)}
+        fmt={v => v === 100 ? '100%（完美再投入）' : v === 0 ? '0%（配息全部領出）' : `${v}%（部分再投入）`} />
+      <div style={{ fontSize: 11, color: 'var(--c-text3)', marginBottom: 10, marginTop: -4 }}>
+        現實中多數投資人無法做到100%即時再投入，建議設定60–80%較貼近實際情況
+      </div>
+
       {amt > 0 && <PhaseBar per={per} />}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
         <Card label="總投入" value={fmtM(cost)} sub={amt > 0 ? perLabel : '一次性'} />
-        <Card label="0050（稅後20年）" value={fmtM(norm0[240])} sub={`稅後年化 ${fmtPA(r0t)}`} />
-        <Card label="009816（20年）" value={fmtM(norm1[240])} sub="不配息，無稅摩擦" />
+        <Card label="0050（帳面+已領配息，20年）"
+          value={fmtM(total0050)}
+          sub={`帳面 ${fmtM(norm0050[240])} + 配息 ${fmtM(totalCashReceived)}`} />
+        <Card label="009816（20年）" value={fmtM(norm9816[240])} sub="不配息，無稅摩擦" />
       </div>
 
       <InvestChart data={chartData} series={[
-        { key: '009816', label: '009816', color: '#1D9E75', width: 2.5 },
-        { key: '0050',   label: '0050（稅後）', color: '#378ADD', width: 2 },
-        ...(ls > 0 ? [{ key: '009816（無一次性）', label: '009816（純定期）', color: '#5DCAA5', dash: '4 3', width: 1.5 }] : []),
-        { key: '總投入', label: '總投入', color: '#888888', dash: '5 4', width: 1.5 },
-      ]} height={220} />
+        { key: '009816',       label: '009816',           color: '#1D9E75', width: 2.5 },
+        { key: '0050帳面資產', label: '0050帳面資產',     color: '#378ADD', width: 2   },
+        ...(showCashFlow ? [{ key: '0050累積已領配息', label: '0050累積已領配息', color: '#7BAFD4', dash: '4 3', width: 1.5 }] : []),
+        { key: '總投入',       label: '總投入',           color: '#888888', dash: '5 4', width: 1.5 },
+      ]} height={230} />
       <Legend items={[
         { color: '#1D9E75', label: '009816' },
-        { color: '#378ADD', label: '0050（稅後）' },
-        ...(ls > 0 ? [{ color: '#5DCAA5', label: '009816（純定期對比）', dash: true }] : []),
+        { color: '#378ADD', label: '0050帳面資產' },
+        ...(showCashFlow ? [{ color: '#7BAFD4', label: '0050累積已領配息', dash: true }] : []),
         { color: '#888888', label: '總投入', dash: true },
       ]} />
 
       <Note mt={8}>
-        009816費後年化 {fmtPA(r1)}，0050費後稅後 {fmtPA(r0t)}。20年後差距 {fmtM(norm1[240] - norm0[240])}。
-        {ls > 0 && ` 一次性投入 ${fmtM(ls)} 比純定期定額多出 ${fmtM(norm1[240] - (normLS1?.[240] || 0))}（20年後）。`}
-        {tax > 0 && ` 稅率 ${fmtPA(tax)} 造成配息摩擦 ${fmtPA(DIV*(tax+TH))}/年。`}
+        009816費後年化 {fmtPA(r1)}，0050費後稅後年化 {fmtPA(r0t)}（再投入效率 {Math.round(rr*100)}%）。
+        20年後 009816 共 {fmtM(norm9816[240])}，
+        0050帳面 {fmtM(norm0050[240])} + 累積配息 {fmtM(totalCashReceived)} = 總回報 {fmtM(total0050)}。
+        {norm9816[240] > total0050
+          ? ` 009816 總回報多出 ${fmtM(norm9816[240] - total0050)}。`
+          : ` 0050 總回報多出 ${fmtM(total0050 - norm9816[240])}。`}
+        {rr < 1 && ` 其中 ${fmtM(totalCashReceived)} 為已領出的配息現金（可用於其他投資或生活費）。`}
       </Note>
     </div>
   )

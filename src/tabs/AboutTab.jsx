@@ -2,7 +2,7 @@ import { Divider, Note } from '../components'
 
 const VERSIONS = [
   {
-    ver: 'v1.5',
+    ver: 'v1.6',
     date: '2026',
     changes: [
       '新增「0050 vs 009816」比較分頁：選股邏輯、持股限制、配息機制、費用率、風險分析、配息再投入年化差異、誰適合哪一檔',
@@ -59,7 +59,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 13, color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v1.5</div>
+          <div>目前版本：v1.6</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

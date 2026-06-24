@@ -9,30 +9,39 @@ import InsTab     from './tabs/InsTab'
 import AboutTab   from './tabs/AboutTab'
 
 const TABS = [
-  { id: 'dca',     label: '📈 定期定額'         },
-  { id: 'compare', label: '⚖️ 0050 vs 009816'   },
-  { id: 'crash',   label: '💥 崩盤模擬'          },
-  { id: 'infl',    label: '💰 通膨購買力'        },
-  { id: 'draw',    label: '🏖️ 退休提領'          },
-  { id: 'div',     label: '🎯 高股息ETF'         },
-  { id: 'ins',     label: '🏦 保險 vs 股市'      },
-  { id: 'about',   label: 'ℹ️ 關於'              },
+  { id: 'dca',     label: '📈 定期定額'        },
+  { id: 'compare', label: '⚖️ 0050 vs 009816'  },
+  { id: 'crash',   label: '💥 崩盤模擬'         },
+  { id: 'infl',    label: '💰 通膨購買力'       },
+  { id: 'draw',    label: '🏖️ 退休提領'         },
+  { id: 'div',     label: '🎯 高股息ETF'        },
+  { id: 'ins',     label: '🏦 儲蓄險 vs 股市'   },
+  { id: 'about',   label: 'ℹ️ 關於'             },
 ]
 
 const INIT = {
-  amt:         200000,
-  lumpSum:     0,
-  per:         36,
-  dr:          0.08,
-  tax:         0,
-  infl:        0.02,
-  drawMo:      50000,
-  drawRate:    0.08,
-  retireAfter: 20,
-  drawYears:   25,
-  dvTotal:     150000,
-  dvW:         [40, 30, 30],
-  dvTarget:    50000,
+  // 定期定額
+  amt:          200000,
+  lumpSum:      0,
+  per:          36,
+  dr:           0.08,
+  tax:          0,
+  reinvestRate: 1,
+  // 儲蓄險（全域，供通膨分頁讀取）
+  insPrin:      7000000,
+  insAnn:       150000,
+  insPen:       0,
+  // 通膨
+  infl:         0.02,
+  // 退休提領
+  drawMo:       50000,
+  drawRate:     0.08,
+  retireAfter:  20,
+  drawYears:    25,
+  // 高股息
+  dvTotal:      150000,
+  dvW:          [40, 30, 30],
+  dvTarget:     50000,
 }
 
 export default function App() {
@@ -45,14 +54,13 @@ export default function App() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 16px 80px' }}>
-      {/* Header */}
       <div style={{
         padding: '16px 0 12px', borderBottom: '0.5px solid var(--c-border)',
         marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.5 · Huang Yen-han</div>
+          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.6 · Huang Yen-han</div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--c-text3)', textAlign: 'right', lineHeight: 1.5 }}>
           每月投入 {(state.amt/10000).toFixed(1)}萬<br />
@@ -60,7 +68,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Tab Bar */}
       <div style={{
         display: 'flex', gap: 5, marginBottom: 18,
         overflowX: 'auto', paddingBottom: 2, WebkitOverflowScrolling: 'touch',
@@ -80,7 +87,6 @@ export default function App() {
         })}
       </div>
 
-      {/* Tab Content */}
       {tab === 'dca'     && <DCATab     state={state} set={set} />}
       {tab === 'compare' && <CompareTab />}
       {tab === 'crash'   && <CrashTab   state={state} set={set} />}

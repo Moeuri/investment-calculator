@@ -2,6 +2,17 @@ import { Divider, Note } from '../components'
 
 const VERSIONS = [
   {
+    ver: 'v1.7',
+    date: '2026',
+    changes: [
+      '崩盤模擬：全面重構演算法，改為「流動性危機型」與「結構重置型」兩種崩盤性質按鈕，取代舊的V/U型態',
+      '崩盤模擬：新增加權融合模型（流動性危機=0.3A+0.7B，結構重置=0.7A+0.3B），修正99%崩跌後離譜快速恢復的BUG',
+      '崩盤模擬：最後一次崩盤後自動展開±1σ統計扇形區間（對數常態，約68%機率範圍）',
+      '崩盤模擬：新增頂部顯著警告（定位為心理承受力測試，非走勢預測）與底部計算邏輯說明',
+      'v1.7起崩盤模型的小幅調整將以1.7.x版本號追蹤',
+    ],
+  },
+  {
     ver: 'v1.6',
     date: '2026',
     changes: [
@@ -59,7 +70,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 13, color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v1.6</div>
+          <div>目前版本：v1.7</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

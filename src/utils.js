@@ -13,14 +13,16 @@ export const ETF_DATA = [
 
 export const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
 
-// 崩盤歷史事件（含歷史恢復模型對應）
+// 崩盤歷史事件（含建議類型）
 export const CRASH_EVENTS = [
-  { name: '1987 黑色星期一', drop: 34, rec: 24, model: 'V', modelNote: '快速V型反彈，約2年回高點'       },
-  { name: '2000 科網泡沫',   drop: 49, rec: 86, model: 'U', modelNote: 'U型盤整，完整恢復長達15年'      },
-  { name: '2008 金融海嘯',   drop: 57, rec: 65, model: 'U', modelNote: 'U型，低點盤整1-2年後緩慢爬升'   },
-  { name: '2020 疫情崩盤',   drop: 34, rec:  6, model: 'V', modelNote: '教科書V型，6個月閃回歷史新高'   },
-  { name: '2022 暴力升息',   drop: 28, rec: 24, model: 'V', modelNote: '偏V型緩步回升，約2年完整恢復'   },
+  { name: '1987 黑色星期一', drop: 34, type: 'liquidity', note: '程式交易觸發的連鎖拋售，企業基本面未受影響，屬流動性危機' },
+  { name: '2000 科網泡沫',   drop: 49, type: 'structural', note: '網路公司估值嚴重泡沫化，大量公司缺乏獲利基礎，屬結構重置' },
+  { name: '2008 金融海嘯',   drop: 57, type: 'structural', note: '金融衍生品槓桿結構崩潰，系統性風險蔓延全球，屬結構重置' },
+  { name: '2020 疫情崩盤',   drop: 34, type: 'liquidity', note: '疫情引發恐慌性拋售，企業長期競爭力未受影響，屬流動性危機' },
+  { name: '2022 暴力升息',   drop: 28, type: 'liquidity', note: '貨幣政策緊縮造成資金重新定價，偏流動性危機（含部分結構影響）' },
 ]
+
+export const MONTH_VOL = 0.18  // 台股年化波動率估算
 
 // 格式化
 export function fmtM(n) {
@@ -34,11 +36,11 @@ export function fmtF(n)  { return Math.round(n).toLocaleString() + ' 元' }
 export function fmtPA(r) { return (r * 100).toFixed(2) + '%' }
 export function fmtP1(r) { return (r * 100).toFixed(1) + '%' }
 
-// 建立正常複利月度序列（240個月）
-export function buildNorm(amt, per, annR) {
+// 正常複利序列（含一次性投入）
+export function buildNorm(lumpSum, amt, per, annR) {
   const mr = annR / 12
   const out = new Float64Array(241)
-  let v = 0
+  let v = lumpSum || 0
   for (let mo = 1; mo <= 240; mo++) {
     v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
     out[mo] = v
@@ -46,68 +48,119 @@ export function buildNorm(amt, per, annR) {
   return out
 }
 
-// 建立單次崩盤序列
-export function buildCrash1(amt, per, annR, crashMo, drop, recMo, model) {
-  const mr = annR / 12
-  const out = new Float64Array(241)
-  let v = 0, gap = 0, boost = 0, flatEnd = 0
-  for (let mo = 1; mo <= 240; mo++) {
-    if (mo < crashMo) {
-      v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
-    } else if (mo === crashMo) {
-      v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
-      gap = v * drop / 100; v *= (1 - drop / 100)
-      if (recMo === 0) { boost = 0 }
-      else if (model === 'V') { boost = gap / recMo; flatEnd = 0 }
-      else { flatEnd = Math.floor(recMo * 0.5); boost = recMo - flatEnd > 0 ? gap / (recMo - flatEnd) : 0 }
-    } else {
-      v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
-      const ms = mo - crashMo
-      if (ms <= recMo && !(model === 'U' && ms <= flatEnd)) v += boost
-    }
-    out[mo] = Math.max(0, v)
-  }
-  return out
+// ─────────────────────────────────────────────
+// 演算法 A：結構重置型
+//   底部震盪期 = -ln(1-drop) × 24 個月
+//   震盪後成長率衰減 = 正常年化 × (1-drop)^0.5
+//   目標：無前高，從底部新趨勢線出發
+// ─────────────────────────────────────────────
+function algoA(bottomVal, drop, annR, monthsAfter) {
+  const shakeMo = Math.round(-Math.log(1 - drop / 100) * 24)
+  const decayedR = annR * Math.pow(1 - drop / 100, 0.5)
+  const mr = decayedR / 12
+  if (monthsAfter <= shakeMo) return bottomVal
+  return bottomVal * Math.pow(1 + mr, monthsAfter - shakeMo)
 }
 
-// 建立多次崩盤序列（最多3次，傳入陣列）
-export function buildCrashN(amt, per, annR, crashes) {
-  // crashes: [{ when(年), drop, rec, model, enabled }]
+// ─────────────────────────────────────────────
+// 演算法 B：流動性危機型
+//   目標趨勢線 = 投入起點開始的正常複利線
+//   恢復函數：指數飽和趨向趨勢線
+//   λ = ln(2) / (-ln(1-drop) × 6)
+// ─────────────────────────────────────────────
+function algoB(bottomVal, drop, annR, monthsAfter, trendAtTarget) {
+  const lambda = Math.log(2) / (-Math.log(1 - drop / 100) * 6)
+  const progress = 1 - Math.exp(-lambda * monthsAfter)
   const mr = annR / 12
-  const out = new Float64Array(241)
-  let v = 0
+  const grownBottom = bottomVal * Math.pow(1 + mr, monthsAfter)
+  return grownBottom + (trendAtTarget - bottomVal * Math.pow(1 + mr, monthsAfter)) * progress
+}
 
-  // 依發生時間排序，只取 enabled 的
+// ─────────────────────────────────────────────
+// 多次崩盤主函數（新版：結構/流動性加權融合）
+// crashes: [{ when(年), drop, type('structural'|'liquidity'), enabled }]
+// ─────────────────────────────────────────────
+export function buildCrashN(lumpSum, amt, per, annR, crashes) {
+  const mr = annR / 12
+  const norm = buildNorm(lumpSum, amt, per, annR)
+
+  // 只取啟用且跌幅>0的崩盤，依時間排序
   const active = crashes
     .filter(c => c.enabled && c.drop > 0)
     .map(c => ({ ...c, mo: c.when * 12 }))
     .sort((a, b) => a.mo - b.mo)
 
-  // 每個崩盤的恢復狀態
-  const states = active.map(c => {
-    let boost = 0, flatEnd = 0
-    return { ...c, boost, flatEnd, triggered: false }
-  })
+  if (active.length === 0) return { vals: norm, fanStart: -1 }
 
-  for (let mo = 1; mo <= 240; mo++) {
-    v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
+  // 加權設定
+  const WEIGHTS = {
+    structural: { wA: 0.7, wB: 0.3 },
+    liquidity:  { wA: 0.3, wB: 0.7 },
+  }
 
-    for (const s of states) {
-      if (mo === s.mo && !s.triggered) {
-        const gap = v * s.drop / 100
-        v *= (1 - s.drop / 100)
-        s.triggered = true
-        if (s.rec === 0) { s.boost = 0 }
-        else if (s.model === 'V') { s.boost = gap / s.rec; s.flatEnd = 0 }
-        else { s.flatEnd = Math.floor(s.rec * 0.5); s.boost = s.rec - s.flatEnd > 0 ? gap / (s.rec - s.flatEnd) : 0 }
-      }
-      if (s.triggered && mo > s.mo) {
-        const ms = mo - s.mo
-        if (ms <= s.rec && !(s.model === 'U' && ms <= s.flatEnd)) v += s.boost
-      }
+  const out = new Float64Array(241)
+  // 崩盤前跟著正常複利走
+  for (let mo = 0; mo <= active[0].mo; mo++) out[mo] = norm[mo]
+
+  let currentVals = new Float64Array(241)
+  for (let mo = 0; mo <= 240; mo++) currentVals[mo] = norm[mo]
+
+  // 逐次套用崩盤
+  for (let ci = 0; ci < active.length; ci++) {
+    const c = active[ci]
+    const crashMo = c.mo
+    const drop = c.drop
+    const { wA, wB } = WEIGHTS[c.type] || WEIGHTS.liquidity
+
+    // 崩盤當月：資產乘以 (1-drop%)
+    const precrash = currentVals[crashMo]
+    const bottom   = precrash * (1 - drop / 100)
+
+    const next = new Float64Array(241)
+    for (let mo = 0; mo <= crashMo; mo++) next[mo] = currentVals[mo]
+    next[crashMo] = bottom
+
+    // 崩盤後逐月計算融合值
+    for (let mo = crashMo + 1; mo <= 240; mo++) {
+      const moSince = mo - crashMo
+      // 繼續扣款（若仍在投入期）
+      const dcaAdd = mo <= per ? amt : 0
+
+      // A演算法值（結構重置）
+      const aVal = algoA(bottom, drop, annR, moSince) + dcaAdd * (moSince / 12)
+
+      // B演算法值（流動性危機）：目標是趨勢線
+      const trendNow = norm[mo]
+      const bVal = algoB(bottom, drop, annR, moSince, trendNow) + dcaAdd * (moSince / 12) * 0.5
+
+      next[mo] = Math.max(0, wA * aVal + wB * bVal)
     }
 
-    out[mo] = Math.max(0, v)
+    currentVals = next
   }
-  return out
+
+  for (let mo = 0; mo <= 240; mo++) out[mo] = currentVals[mo]
+
+  // 扇形從最後一次崩盤開始
+  const fanStart = active[active.length - 1].mo
+
+  return { vals: out, fanStart }
+}
+
+// 計算扇形上下緣（對數常態，±1σ）
+export function calcFan(centralVals, fanStartMo, annVol) {
+  const upper = new Float64Array(241)
+  const lower = new Float64Array(241)
+  for (let mo = 0; mo <= 240; mo++) {
+    if (mo <= fanStartMo) {
+      upper[mo] = centralVals[mo]
+      lower[mo] = centralVals[mo]
+    } else {
+      const t = (mo - fanStartMo) / 12
+      const sigma = annVol * Math.sqrt(t)
+      upper[mo] = centralVals[mo] * Math.exp(sigma)
+      lower[mo] = centralVals[mo] * Math.exp(-sigma)
+    }
+  }
+  return { upper, lower }
 }

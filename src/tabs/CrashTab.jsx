@@ -1,89 +1,139 @@
 import { useState, useMemo } from 'react'
-import { Card, Note, Slider, SectionTitle, SubTab, EventBtn, InvestChart, Legend, Divider } from '../components'
-import { buildNorm, buildCrashN, fmtM, CRASH_EVENTS, EXP1 } from '../utils'
+import { Card, Note, SectionTitle, SubTab, InvestChart, Legend, Divider } from '../components'
+import { buildNorm, buildCrashN, calcFan, fmtM, CRASH_EVENTS, EXP1, MONTH_VOL } from '../utils'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ReferenceLine, Area, ComposedChart,
+} from 'recharts'
 
-const MODEL_OPTS = [
-  { v: 'V', label: 'V型（直線反彈）' },
-  { v: 'U', label: 'U型（低點盤整）' },
-]
+// 崩盤類型按鈕
+function TypeBtn({ value, onChange }) {
+  const opts = [
+    {
+      v: 'liquidity',
+      label: '流動性危機',
+      sub: '資金停泊調整，企業基本面未受結構性破壞',
+      weight: '演算法：0.3×結構 ＋ 0.7×流動性',
+      color: 'var(--c-blue)',
+      bg: 'var(--c-blue-bg)',
+    },
+    {
+      v: 'structural',
+      label: '結構重置',
+      sub: '估值體系或金融結構崩潰，難以回到前高',
+      weight: '演算法：0.7×結構 ＋ 0.3×流動性',
+      color: 'var(--c-red)',
+      bg: 'var(--c-red-bg)',
+    },
+  ]
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+      {opts.map(o => {
+        const on = value === o.v
+        return (
+          <button key={o.v} onClick={() => onChange(o.v)} style={{
+            padding: '10px 12px', borderRadius: 'var(--radius-sm)', textAlign: 'left',
+            border: `1.5px solid ${on ? o.color : 'var(--c-border)'}`,
+            background: on ? o.bg : 'var(--c-bg)', cursor: 'pointer',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: on ? 700 : 500, color: on ? o.color : 'var(--c-text)', marginBottom: 3 }}>
+              {o.label}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--c-text3)', lineHeight: 1.4, marginBottom: 4 }}>{o.sub}</div>
+            <div style={{ fontSize: 10, color: on ? o.color : 'var(--c-text3)', opacity: 0.8 }}>{o.weight}</div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// 跌幅滑桿（可點擊輸入）
+function DropSlider({ value, onChange }) {
+  const [editing, setEditing] = useState(false)
+  const [raw, setRaw] = useState('')
+  function commit() {
+    const n = parseFloat(raw)
+    if (!isNaN(n)) onChange(Math.min(99, Math.max(0, Math.round(n))))
+    setEditing(false)
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+      <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>最大跌幅</span>
+      <input type="range" min={0} max={99} step={1} value={value}
+        onChange={e => onChange(Number(e.target.value))} style={{ flex: 1 }} />
+      {editing
+        ? <input autoFocus value={raw} onChange={e => setRaw(e.target.value)}
+            onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+            style={{ width: 80, fontSize: 13, fontWeight: 600, textAlign: 'right', border: '1.5px solid var(--c-blue)', borderRadius: 4, padding: '2px 6px', background: 'var(--c-bg)', color: 'var(--c-text)', outline: 'none' }} />
+        : <span onClick={() => { setRaw(String(value)); setEditing(true) }}
+            style={{ fontSize: 13, fontWeight: 600, minWidth: 80, textAlign: 'right', cursor: 'text', borderBottom: '1px dashed var(--c-border2)', paddingBottom: 1 }}>
+            {value === 0 ? '0%（無崩跌）' : `-${value}%`}
+          </span>}
+    </div>
+  )
+}
 
 const DEFAULT_CRASH = (when, evtIdx) => ({
   when,
   drop: CRASH_EVENTS[evtIdx].drop,
-  rec:  CRASH_EVENTS[evtIdx].rec,
-  model: CRASH_EVENTS[evtIdx].model,
+  type: CRASH_EVENTS[evtIdx].type,
   evtIdx,
   enabled: true,
 })
 
 function CrashParamPanel({ c, setC, label }) {
   function applyEvent(i) {
-    setC({ ...c, drop: CRASH_EVENTS[i].drop, rec: CRASH_EVENTS[i].rec, model: CRASH_EVENTS[i].model, evtIdx: i })
+    setC({ ...c, drop: CRASH_EVENTS[i].drop, type: CRASH_EVENTS[i].type, evtIdx: i })
   }
-
-  const modelNote = c.evtIdx !== null ? CRASH_EVENTS[c.evtIdx]?.modelNote : null
+  const note = c.evtIdx !== null ? CRASH_EVENTS[c.evtIdx]?.note : null
 
   return (
     <div>
-      {/* 啟用開關 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-          <input type="checkbox" checked={c.enabled} onChange={e => setC({ ...c, enabled: e.target.checked })}
-            style={{ width: 16, height: 16, accentColor: 'var(--c-red)', cursor: 'pointer' }} />
-          <span style={{ fontWeight: 600, color: c.enabled ? 'var(--c-text)' : 'var(--c-text3)' }}>
-            {label} {c.enabled ? '（啟用）' : '（停用）'}
-          </span>
-        </label>
-      </div>
+      {/* 啟用勾選 */}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginBottom: 12 }}>
+        <input type="checkbox" checked={c.enabled} onChange={e => setC({ ...c, enabled: e.target.checked })}
+          style={{ width: 16, height: 16, accentColor: 'var(--c-red)', cursor: 'pointer' }} />
+        <span style={{ fontWeight: 600, color: c.enabled ? 'var(--c-text)' : 'var(--c-text3)' }}>
+          {label}　{c.enabled ? '（啟用）' : '（停用）'}
+        </span>
+      </label>
 
       {c.enabled && (
         <>
           {/* 歷史事件 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, marginBottom: 10 }}>
             {CRASH_EVENTS.map((ev, i) => (
-              <EventBtn key={i}
-                label={ev.name.replace(' ', '\n')}
-                sub={`-${ev.drop}%/${ev.rec}月`}
-                modelNote={ev.modelNote}
-                active={c.evtIdx === i}
-                onClick={() => applyEvent(i)} />
+              <button key={i} onClick={() => applyEvent(i)} style={{
+                padding: '6px 3px', borderRadius: 'var(--radius-sm)', textAlign: 'center',
+                border: `0.5px solid ${c.evtIdx === i ? 'transparent' : 'var(--c-border)'}`,
+                background: c.evtIdx === i ? 'var(--c-red-bg)' : 'var(--c-bg)',
+                color: c.evtIdx === i ? 'var(--c-red)' : 'var(--c-text2)',
+                fontSize: 11, cursor: 'pointer', lineHeight: 1.4,
+              }}>
+                <div>{ev.name.split(' ')[0]}</div>
+                <div style={{ fontSize: 10, marginTop: 2 }}>{ev.name.split(' ').slice(1).join(' ')}</div>
+                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>-{ev.drop}%</div>
+              </button>
             ))}
           </div>
 
-          {/* 恢復模型說明 */}
-          {modelNote && (
-            <Note type="info" mt={0}>
-              📖 歷史恢復模式：{modelNote}
-            </Note>
-          )}
+          {note && <Note type="info" mt={0}>{note}</Note>}
 
+          {/* 崩盤類型 */}
           <div style={{ marginTop: 10 }}>
-            <Slider label="崩盤發生（第幾年）" min={1} max={19} step={1}
-              value={c.when} onChange={v => setC({ ...c, when: v })} fmt={v => `第 ${v} 年`} />
-            <Slider label="最大跌幅" min={0} max={99} step={1}
-              value={c.drop} onChange={v => setC({ ...c, drop: v, evtIdx: null })}
-              fmt={v => v === 0 ? '0%（無崩跌）' : `-${v}%`} />
-            <Slider label="恢復時間（月）" min={0} max={120} step={1}
-              value={c.rec} onChange={v => setC({ ...c, rec: v, evtIdx: null })}
-              fmt={v => `${v} 個月（約${(v/12).toFixed(1)}年）`} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>恢復模型</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {MODEL_OPTS.map(o => {
-                  const on = c.model === o.v
-                  return (
-                    <button key={o.v} onClick={() => setC({ ...c, model: o.v, evtIdx: null })} style={{
-                      padding: '5px 13px', borderRadius: 'var(--radius-sm)',
-                      border: `0.5px solid ${on ? 'var(--c-border2)' : 'var(--c-border)'}`,
-                      background: on ? 'var(--c-bg3)' : 'var(--c-bg)',
-                      color: on ? 'var(--c-text)' : 'var(--c-text3)',
-                      fontSize: 12, fontWeight: on ? 600 : 400, cursor: 'pointer',
-                    }}>{o.label}</button>
-                  )
-                })}
-              </div>
-            </div>
+            <div style={{ fontSize: 13, color: 'var(--c-text2)', marginBottom: 8 }}>崩盤性質</div>
+            <TypeBtn value={c.type} onChange={v => setC({ ...c, type: v, evtIdx: null })} />
           </div>
+
+          {/* 發生年份 + 跌幅 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>崩盤發生（第幾年）</span>
+            <input type="range" min={1} max={19} step={1} value={c.when}
+              onChange={e => setC({ ...c, when: Number(e.target.value) })} style={{ flex: 1 }} />
+            <span style={{ fontSize: 13, fontWeight: 600, minWidth: 80, textAlign: 'right' }}>第 {c.when} 年</span>
+          </div>
+          <DropSlider value={c.drop} onChange={v => setC({ ...c, drop: v, evtIdx: null })} />
         </>
       )}
     </div>
@@ -91,64 +141,83 @@ function CrashParamPanel({ c, setC, label }) {
 }
 
 export default function CrashTab({ state }) {
-  const { amt, per, dr } = state
+  const { amt, per, dr, lumpSum } = state
   const r1 = dr + 0.01 - EXP1
+  const ls = lumpSum || 0
 
   const [subTab, setSubTab] = useState('c1')
-  const [c1, setC1] = useState(DEFAULT_CRASH(3,  2))  // 金融海嘯
-  const [c2, setC2] = useState(DEFAULT_CRASH(8,  3))  // 疫情
-  const [c3, setC3] = useState({ ...DEFAULT_CRASH(13, 4), enabled: false })  // 升息，預設停用
+  const [c1, setC1] = useState(DEFAULT_CRASH(3,  2))
+  const [c2, setC2] = useState(DEFAULT_CRASH(8,  3))
+  const [c3, setC3] = useState({ ...DEFAULT_CRASH(13, 4), enabled: false })
 
-  const crashes = [c1, c2, c3]
-
-  // 驗證：後面的崩盤必須晚於前面
   const c2Invalid = c2.enabled && c1.enabled && c2.when <= c1.when
   const c3Invalid = c3.enabled && (
     (c1.enabled && c3.when <= c1.when) ||
     (c2.enabled && c3.when <= c2.when)
   )
-  const hasError = c2Invalid || c3Invalid
 
-  const { norm, crashSeries, chartData } = useMemo(() => {
-    const norm = buildNorm(amt, per, r1)
-    const cost = amt * per
-
-    // 三條崩盤線：只有崩盤1、1+2、1+2+3
-    const crash1only = buildCrashN(amt, per, r1, [c1])
-    const crash12    = buildCrashN(amt, per, r1, [c1, c2])
-    const crash123   = buildCrashN(amt, per, r1, [c1, c2, c3])
+  const { chartData, summaryCards } = useMemo(() => {
+    const norm = buildNorm(ls, amt, per, r1)
+    const cost = ls + amt * per
+    const crashes = [c1, c2, c3]
+    const { vals: crashVals, fanStart } = buildCrashN(ls, amt, per, r1, crashes)
+    const { upper, lower } = calcFan(crashVals, fanStart, MONTH_VOL)
 
     const data = Array.from({ length: 20 }, (_, i) => {
       const y = i + 1, mo = y * 12
-      const row = {
+      const cv = crashVals[mo]
+      const isAfterFan = mo > fanStart && fanStart >= 0
+      return {
         year: `${y}年`,
         '正常複利': Math.round(norm[mo]),
-        '總投入':   Math.round(Math.min(cost, amt * mo)),
+        '崩盤中央': Math.round(cv),
+        '扇形上緣': isAfterFan ? Math.round(upper[mo]) : null,
+        '扇形下緣': isAfterFan ? Math.round(lower[mo]) : null,
+        '總投入':   Math.round(Math.min(cost, ls + amt * mo)),
       }
-      if (c1.enabled) row['崩盤一'] = Math.round(crash1only[mo])
-      if (c1.enabled && c2.enabled && !c2Invalid) row['崩盤一＋二'] = Math.round(crash12[mo])
-      if (c1.enabled && c2.enabled && c3.enabled && !c2Invalid && !c3Invalid) row['三次崩盤'] = Math.round(crash123[mo])
-      return row
     })
-    return { norm, crashSeries: { crash1only, crash12, crash123 }, chartData: data }
-  }, [amt, per, r1, c1, c2, c3, c2Invalid, c3Invalid])
 
-  const refLines = [
-    ...(c1.enabled ? [{ x: `${c1.when}年`, color: '#E24B4A', label: '崩1' }] : []),
-    ...(c2.enabled && !c2Invalid ? [{ x: `${c2.when}年`, color: '#BA7517', label: '崩2' }] : []),
-    ...(c3.enabled && !c3Invalid ? [{ x: `${c3.when}年`, color: '#9B59B6', label: '崩3' }] : []),
-  ]
+    // 摘要卡片
+    const activeCrashes = crashes.filter(c => c.enabled && c.drop > 0)
+    const lastCrash = activeCrashes[activeCrashes.length - 1]
+    const lastCrashMo = lastCrash ? lastCrash.when * 12 : 0
+    const assetAtLastCrash = lastCrash ? norm[lastCrashMo] : 0
+    const bottomAtLastCrash = lastCrash ? crashVals[lastCrashMo] : 0
+    const finalCrash = crashVals[240]
+    const finalNorm  = norm[240]
 
-  const activeSeries = [
-    { key: '正常複利',   label: '正常複利',   color: '#1D9E75', width: 2.5 },
-    ...(c1.enabled ? [{ key: '崩盤一', label: '崩盤一', color: '#E24B4A', width: 2 }] : []),
-    ...(c1.enabled && c2.enabled && !c2Invalid ? [{ key: '崩盤一＋二', label: '崩盤一＋二', color: '#BA7517', width: 2 }] : []),
-    ...(c1.enabled && c2.enabled && c3.enabled && !c2Invalid && !c3Invalid ? [{ key: '三次崩盤', label: '三次崩盤', color: '#9B59B6', width: 2 }] : []),
-    { key: '總投入', label: '總投入', color: '#888888', dash: '5 4', width: 1.5 },
-  ]
+    return {
+      chartData: data,
+      summaryCards: { assetAtLastCrash, bottomAtLastCrash, finalCrash, finalNorm, lastCrash },
+    }
+  }, [ls, amt, per, r1, c1, c2, c3])
 
   return (
     <div>
+      {/* 頂部警告 */}
+      <div style={{
+        background: '#C0392B', color: '#fff',
+        borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: 16,
+      }}>
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
+          ⚠️ 此模擬不是走勢預測，請先閱讀
+        </div>
+        <div style={{ fontSize: 12, lineHeight: 1.7 }}>
+          本頁面的唯一目的是幫助你評估：如果發生某種崩盤情境，你的資產會變成什麼樣子，以及你是否能在心理和財務上承受這個過程而不提前出場。<br />
+          崩盤的發生時機、深度和恢復路徑在事前都無法預測。<b>提前在低點賣出才是定期定額投資者面臨崩盤時最大的風險，而不是帳面虧損本身。</b><br />
+          扇形區域代表最後一次崩盤後的統計不確定性（±1個標準差，約68%機率區間），時間越遠不確定性越大。
+        </div>
+      </div>
+
+      {/* 衝突警告 */}
+      {(c2Invalid || c3Invalid) && (
+        <Note type="warn" mt={0}>
+          ⚠️ 崩盤時間順序衝突：{c2Invalid ? `崩盤二（第${c2.when}年）須晚於崩盤一（第${c1.when}年）。` : ''}
+          {c3Invalid ? `崩盤三須晚於前兩次崩盤。` : ''}
+        </Note>
+      )}
+
+      {/* 子Tab */}
       <SubTab
         tabs={[
           { id: 'c1', label: `💥 崩盤一 ${c1.enabled ? '✓' : '○'}` },
@@ -158,14 +227,7 @@ export default function CrashTab({ state }) {
         value={subTab} onChange={setSubTab}
       />
 
-      {hasError && (
-        <Note type="warn" mt={0}>
-          ⚠️ 崩盤時間順序有衝突：{c2Invalid ? `崩盤二（第${c2.when}年）須晚於崩盤一（第${c1.when}年）` : ''}
-          {c3Invalid ? `崩盤三（第${c3.when}年）須晚於前兩次崩盤` : ''}
-        </Note>
-      )}
-
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginBottom: 12 }}>
         {subTab === 'c1' && <CrashParamPanel c={c1} setC={setC1} label="崩盤一" />}
         {subTab === 'c2' && <CrashParamPanel c={c2} setC={setC2} label="崩盤二" />}
         {subTab === 'c3' && <CrashParamPanel c={c3} setC={setC3} label="崩盤三" />}
@@ -173,32 +235,80 @@ export default function CrashTab({ state }) {
 
       <Divider />
 
-      {/* 三卡摘要 */}
+      {/* 摘要卡片 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 12 }}>
-        <Card label="正常複利20年" value={fmtM(norm[240])} sub="無崩盤基準" accent="#1D9E75" />
-        <Card label={`崩盤一後20年 ${!c1.enabled?'（停用）':''}`}
-          value={c1.enabled ? fmtM(crashSeries.crash1only[240]) : '—'}
-          sub={c1.enabled ? `第${c1.when}年跌${c1.drop}%` : '勾選啟用崩盤一'}
-          accent={c1.enabled ? '#E24B4A' : undefined} />
-        <Card label={`全部崩盤後20年`}
-          value={c1.enabled && c2.enabled && !c2Invalid && !c3Invalid ? fmtM(crashSeries.crash123[240]) : '—'}
-          sub="所有啟用的崩盤疊加"
-          accent="#9B59B6" />
+        <Card label="正常複利20年（無崩盤）" value={fmtM(summaryCards.finalNorm)} sub="基準線" accent="#1D9E75" />
+        <Card label="最後崩盤當下底部資產"
+          value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
+          sub={summaryCards.lastCrash ? `第${summaryCards.lastCrash.when}年，跌${summaryCards.lastCrash.drop}%` : '無啟用崩盤'}
+          accent="#E24B4A" />
+        <Card label="崩盤情境20年後（中央值）"
+          value={fmtM(summaryCards.finalCrash)}
+          sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalCrash)}`}
+          accent="#BA7517" />
       </div>
 
-      <InvestChart data={chartData} series={activeSeries} height={260} refLines={refLines} />
-      <Legend items={[
-        { color: '#1D9E75', label: '正常複利' },
-        ...(c1.enabled ? [{ color: '#E24B4A', label: '崩盤一' }] : []),
-        ...(c1.enabled && c2.enabled && !c2Invalid ? [{ color: '#BA7517', label: '崩盤一＋二' }] : []),
-        ...(c1.enabled && c2.enabled && c3.enabled && !c2Invalid && !c3Invalid ? [{ color: '#9B59B6', label: '三次崩盤' }] : []),
-        { color: '#888888', label: '總投入', dash: true },
-      ]} />
+      {/* 扇形疊圖 */}
+      <ResponsiveContainer width="100%" height={280}>
+        <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
+          <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} />
+          <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
+          <Tooltip formatter={(v, name) => v !== null ? [fmtM(v), name] : null}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }} />
+          {/* 扇形填色區 */}
+          <Area type="monotone" dataKey="扇形上緣" stroke="none" fill="#E24B4A" fillOpacity={0.12} legendType="none" />
+          <Area type="monotone" dataKey="扇形下緣" stroke="none" fill="#fff" fillOpacity={1} legendType="none" />
+          {/* 主線 */}
+          <Line type="monotone" dataKey="正常複利" stroke="#1D9E75" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="崩盤中央" stroke="#E24B4A" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="扇形上緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+          <Line type="monotone" dataKey="扇形下緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+          <Line type="monotone" dataKey="總投入" stroke="#888888" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+        </ComposedChart>
+      </ResponsiveContainer>
 
-      <Note mt={8}>
-        圖表同時顯示正常複利、各次崩盤疊加效果。每條線的差距代表對應崩盤造成的長期損失。
-        勾選/取消各崩盤可即時比較有無該次崩盤的影響。
-      </Note>
+      <div style={{ display: 'flex', gap: 14, marginTop: 7, fontSize: 11, color: 'var(--c-text3)', flexWrap: 'wrap' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 12, height: 3, background: '#1D9E75', display: 'inline-block' }} />正常複利
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 12, height: 3, background: '#E24B4A', display: 'inline-block' }} />崩盤中央值
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 20, height: 8, background: 'rgba(226,75,74,0.15)', border: '1px dashed #E24B4A', display: 'inline-block', borderRadius: 2 }} />±1σ 扇形（68%區間）
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 12, height: 2, borderTop: '2px dashed #888', display: 'inline-block' }} />總投入
+        </span>
+      </div>
+
+      <Divider />
+
+      {/* 底部說明 */}
+      <div style={{
+        background: 'var(--c-bg2)', borderRadius: 'var(--radius)',
+        padding: '14px 16px', fontSize: 12, color: 'var(--c-text2)', lineHeight: 1.8,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-text)', marginBottom: 8 }}>
+          關於本模擬的計算邏輯
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          本模擬將股市崩盤分為兩種性質，但實際上兩者往往相互影響、同時發生，只是比例不同。
+        </div>
+        <div style={{ marginBottom: 6 }}>
+          <span style={{ fontWeight: 600, color: 'var(--c-blue)' }}>流動性危機型</span>：成因是資金在不同資產之間的快速移動，例如央行升降息改變資金的停泊成本、地緣政治衝突引發恐慌性拋售。這種情況下，多數企業的實際獲利能力和競爭地位並未受到根本破壞。資金重新找到定價共識後，市場有較大機率回到原有的成長趨勢線。
+        </div>
+        <div style={{ marginBottom: 6 }}>
+          <span style={{ fontWeight: 600, color: 'var(--c-red)' }}>結構重置型</span>：成因是市場估值體系本身的崩潰，或金融系統槓桿結構的瓦解。這種崩盤代表舊有的「合理價格」是錯的，市場不是在等待回到前高，而是在重新尋找新的均衡點。恢復期遠比流動性危機漫長，前高可能很多年甚至永遠不會被回測。
+        </div>
+        <div style={{ marginBottom: 6 }}>
+          <span style={{ fontWeight: 600 }}>加權融合</span>：本模型承認現實中兩種類型幾乎不會純粹獨立發生。流動性危機也會造成部分結構傷害，結構重置同時引發資金大規模移動。因此兩個按鈕對應的是不同的加權比例，而非非此即彼的二元選擇。
+        </div>
+        <div>
+          <span style={{ fontWeight: 600 }}>扇形區間</span>：代表最後一次崩盤發生後，未來路徑的統計不確定性。採對數常態分佈，以台股歷史年化波動率約18%估算±1個標準差，時間越遠扇形越寬，反映「預測越遠越不確定」的現實。扇形的上下緣不是最好和最壞的情境，而是統計上約68%機率會落在其中的範圍。
+        </div>
+      </div>
     </div>
   )
 }

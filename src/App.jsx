@@ -21,15 +21,15 @@ const TABS = [
 
 const INIT = {
   // 定期定額
-  amt:          200000,
+  amt:          0,
   lumpSum:      0,
   per:          36,
   dr:           0.08,
   tax:          0,
   reinvestRate: 1,
   // 儲蓄險（全域，供通膨分頁讀取）
-  insPrin:      7000000,
-  insAnn:       150000,
+  insPrin:      0,
+  insAnn:       0,
   insPen:       0,
   // 通膨
   infl:         0.02,
@@ -60,7 +60,7 @@ export default function App() {
       }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.7.1 · Huang Yen-han</div>
+          <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>v1.7.2 · Huang Yen-han</div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--c-text3)', textAlign: 'right', lineHeight: 1.5 }}>
           每月投入 {(state.amt/10000).toFixed(1)}萬<br />

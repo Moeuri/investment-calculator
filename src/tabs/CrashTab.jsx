@@ -147,7 +147,7 @@ export default function CrashTab({ state }) {
 
   const [subTab, setSubTab] = useState('c1')
   const [c1, setC1] = useState(DEFAULT_CRASH(3,  2))
-  const [c2, setC2] = useState(DEFAULT_CRASH(8,  3))
+  const [c2, setC2] = useState({ ...DEFAULT_CRASH(8,  3), enabled: false })
   const [c3, setC3] = useState({ ...DEFAULT_CRASH(13, 4), enabled: false })
 
   const c2Invalid = c2.enabled && c1.enabled && c2.when <= c1.when
@@ -166,7 +166,7 @@ export default function CrashTab({ state }) {
     const data = Array.from({ length: 20 }, (_, i) => {
       const y = i + 1, mo = y * 12
       const cv = crashVals[mo]
-      const isAfterFan = mo > fanStart && fanStart >= 0
+      const isAfterFan = mo >= fanStart && fanStart >= 0  // 從崩盤月開始（含），確保起點接續中央線
       const upperVal = isAfterFan ? Math.round(upper[mo]) : null
       const lowerVal = isAfterFan ? Math.round(lower[mo]) : null
       return {
@@ -225,17 +225,17 @@ export default function CrashTab({ state }) {
       {/* 子Tab */}
       <SubTab
         tabs={[
-          { id: 'c1', label: `💥 崩盤一 ${c1.enabled ? '✓' : '○'}` },
-          { id: 'c2', label: `💥 崩盤二 ${c2.enabled ? '✓' : '○'}` },
-          { id: 'c3', label: `💥 崩盤三 ${c3.enabled ? '✓' : '○'}` },
+          { id: 'c1', label: `💥 崩盤一次 ${c1.enabled ? '✓' : '○'}` },
+          { id: 'c2', label: `💥 崩盤兩次 ${c2.enabled ? '✓' : '○'}` },
+          { id: 'c3', label: `💥 崩盤三次 ${c3.enabled ? '✓' : '○'}` },
         ]}
         value={subTab} onChange={setSubTab}
       />
 
       <div style={{ marginBottom: 12 }}>
-        {subTab === 'c1' && <CrashParamPanel c={c1} setC={setC1} label="崩盤一" />}
-        {subTab === 'c2' && <CrashParamPanel c={c2} setC={setC2} label="崩盤二" />}
-        {subTab === 'c3' && <CrashParamPanel c={c3} setC={setC3} label="崩盤三" />}
+        {subTab === 'c1' && <CrashParamPanel c={c1} setC={setC1} label="崩盤一次" />}
+        {subTab === 'c2' && <CrashParamPanel c={c2} setC={setC2} label="崩盤兩次" />}
+        {subTab === 'c3' && <CrashParamPanel c={c3} setC={setC3} label="崩盤三次" />}
       </div>
 
       <Divider />

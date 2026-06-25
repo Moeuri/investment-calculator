@@ -147,7 +147,7 @@ export function buildCrashN(lumpSum, amt, per, annR, crashes) {
   return { vals: out, fanStart }
 }
 
-// 計算扇形上下緣（對數常態，±1σ）
+// 計算扇形上下緣（對數常態，±1σ，從崩盤點出發）
 export function calcFan(centralVals, fanStartMo, annVol) {
   const upper = new Float64Array(241)
   const lower = new Float64Array(241)
@@ -156,6 +156,7 @@ export function calcFan(centralVals, fanStartMo, annVol) {
       upper[mo] = centralVals[mo]
       lower[mo] = centralVals[mo]
     } else {
+      // 從 fanStartMo 後才開始擴展，t 從 0 開始，確保起點 σ=0
       const t = (mo - fanStartMo) / 12
       const sigma = annVol * Math.sqrt(t)
       upper[mo] = centralVals[mo] * Math.exp(sigma)

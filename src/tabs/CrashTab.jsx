@@ -175,6 +175,9 @@ function ExtremeSection() {
             <div style={{ color: 'var(--c-text3)', fontSize: 11, padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
               代表意義：2020年是「現代央行工具箱在最有利條件下的最佳表現」。它說明了為什麼歷史上實際走勢往往比保守模型更樂觀。但這個條件組合（原因清晰、工具齊備、企業基本面未受損、各國同步刺激）並非每次崩盤都具備，不能作為「崩跌後必然快速恢復」的保證。
             </div>
+            <div style={{ marginTop: 8, padding: '7px 10px', background: '#1a2e1a', border: '1px solid #2d5a2d', borderRadius: 4, fontSize: 11, color: '#7ec87e', lineHeight: 1.6 }}>
+              ⚠️ 模型套用提醒：本計算器的歷史事件選單包含「2020疫情崩盤」選項，但套用後的中央預測與分布範圍<strong>無法反映4個月閃回這個現實</strong>。若選用此事件，後續的扇形分布區間將嚴重低估上行可能性，請將此情境理解為「如果這次崩跌沒有史無前例的政策介入會怎樣」的壓力測試，而非對2020年實際情況的模擬。
+            </div>
           </div>
         </div>
       )}
@@ -248,9 +251,6 @@ export default function CrashTab({ state }) {
         </div>
       </div>
 
-      {/* ── 可展開：極端情境說明 ── */}
-      <ExtremeSection />
-
       {/* ── 衝突警告 ── */}
       {(c2Invalid || c3Invalid) && (
         <Note type="warn" mt={0}>
@@ -298,7 +298,7 @@ export default function CrashTab({ state }) {
           <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
           <Tooltip
             formatter={(v, name) => {
-              if (['fanBase','fanRange','分布上緣','分布下緣'].includes(name)) return null
+              if (['fanBase','fanRange'].includes(name)) return null
               return v !== null ? [fmtM(v), name] : null
             }}
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }}
@@ -323,6 +323,9 @@ export default function CrashTab({ state }) {
       </div>
 
       <Divider />
+
+      {/* ── 可展開：極端情境說明 ── */}
+      <ExtremeSection />
 
       {/* ── 底部計算邏輯說明 ── */}
       <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '14px 16px', fontSize: 12, color: 'var(--c-text2)', lineHeight: 1.8 }}>

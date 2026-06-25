@@ -182,18 +182,19 @@ export default function CrashTab({ state }) {
       }
     })
 
-    // 摘要卡片
     const activeCrashes = crashes.filter(c => c.enabled && c.drop > 0)
     const lastCrash = activeCrashes[activeCrashes.length - 1]
     const lastCrashMo = lastCrash ? lastCrash.when * 12 : 0
-    const assetAtLastCrash = lastCrash ? norm[lastCrashMo] : 0
+    const assetAtLastCrash  = lastCrash ? norm[lastCrashMo] : 0
     const bottomAtLastCrash = lastCrash ? crashVals[lastCrashMo] : 0
-    const finalCrash = crashVals[240]
-    const finalNorm  = norm[240]
+    const finalCrash  = crashVals[240]
+    const finalNorm   = norm[240]
+    const finalUpper  = upper[240]
+    const finalLower  = lower[240]
 
     return {
       chartData: data,
-      summaryCards: { assetAtLastCrash, bottomAtLastCrash, finalCrash, finalNorm, lastCrash },
+      summaryCards: { assetAtLastCrash, bottomAtLastCrash, finalCrash, finalNorm, finalUpper, finalLower, lastCrash },
     }
   }, [ls, amt, per, r1, c1, c2, c3])
 
@@ -247,9 +248,9 @@ export default function CrashTab({ state }) {
           value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
           sub={summaryCards.lastCrash ? `第${summaryCards.lastCrash.when}年，跌${summaryCards.lastCrash.drop}%` : '無啟用崩盤'}
           accent="#E24B4A" />
-        <Card label="崩盤情境20年後（中央值）"
-          value={fmtM(summaryCards.finalCrash)}
-          sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalCrash)}`}
+        <Card label="崩盤情境20年後（68%區間）"
+          value={`${fmtM(summaryCards.finalLower)} ~ ${fmtM(summaryCards.finalUpper)}`}
+          sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalUpper)} ~ ${fmtM(summaryCards.finalNorm - summaryCards.finalLower)}`}
           accent="#BA7517" />
       </div>
 
@@ -259,11 +260,11 @@ export default function CrashTab({ state }) {
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
           <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} />
           <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
-          <Tooltip formatter={(v, name) => v !== null ? [fmtM(v), name] : null}
+          <Tooltip formatter={(v, name) => { if (['fanBase','fanRange','扇形上緣','扇形下緣'].includes(name)) return null; return v !== null ? [fmtM(v), name] : null }}
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }} />
           {/* 扇形填色區：stackId 技巧，fanBase 透明（佔位到下緣），fanRange 半透明紅（下緣到上緣） */}
-          <Area type="monotone" dataKey="fanBase" stackId="fan" stroke="none" fill="transparent" fillOpacity={0} legendType="none" />
-          <Area type="monotone" dataKey="fanRange" stackId="fan" stroke="none" fill="#E24B4A" fillOpacity={0.15} legendType="none" />
+          <Area type="monotone" dataKey="fanBase" stackId="fan" stroke="none" fill="transparent" fillOpacity={0} legendType="none" tooltipType="none" />
+          <Area type="monotone" dataKey="fanRange" stackId="fan" stroke="none" fill="#E24B4A" fillOpacity={0.15} legendType="none" tooltipType="none" />
           {/* 主線 */}
           <Line type="monotone" dataKey="正常複利" stroke="#1D9E75" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
           <Line type="monotone" dataKey="崩盤中央" stroke="#E24B4A" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />

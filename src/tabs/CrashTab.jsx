@@ -172,12 +172,12 @@ export default function CrashTab({ state }) {
       return {
         year: `${y}年`,
         '正常複利':  Math.round(norm[mo]),
-        '崩盤中央':  Math.round(cv),
+        '中央預測':   Math.round(cv),
         // stackId 技巧：fanBase 從 0 到下緣（透明），fanRange 從下緣到上緣（半透明紅）
-        'fanBase':  lowerVal,
-        'fanRange': (upperVal !== null && lowerVal !== null) ? upperVal - lowerVal : null,
-        '扇形上緣': upperVal,
-        '扇形下緣': lowerVal,
+        'fanBase':   lowerVal,
+        'fanRange':  (upperVal !== null && lowerVal !== null) ? upperVal - lowerVal : null,
+        '分布上緣':  upperVal,
+        '分布下緣':  lowerVal,
         '總投入':   Math.round(Math.min(cost, ls + amt * mo)),
       }
     })
@@ -211,7 +211,7 @@ export default function CrashTab({ state }) {
         <div style={{ fontSize: 12, lineHeight: 1.7 }}>
           本頁面的唯一目的是幫助你評估：如果發生某種崩盤情境，你的資產會變成什麼樣子，以及你是否能在心理和財務上承受這個過程而不提前出場。<br />
           崩盤的發生時機、深度和恢復路徑在事前都無法預測。<b>提前在低點賣出才是定期定額投資者面臨崩盤時最大的風險，而不是帳面虧損本身。</b><br />
-          扇形區域代表最後一次崩盤後的統計不確定性（±1個標準差，約68%機率區間），時間越遠不確定性越大。
+          分布區間（扇形）代表最後一次崩盤後的統計不確定性（±1σ，約68%機率），時間越遠分布越寬。
         </div>
       </div>
 
@@ -248,7 +248,7 @@ export default function CrashTab({ state }) {
           value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
           sub={summaryCards.lastCrash ? `第${summaryCards.lastCrash.when}年，跌${summaryCards.lastCrash.drop}%` : '無啟用崩盤'}
           accent="#E24B4A" />
-        <Card label="崩盤情境20年後（68%區間）"
+        <Card label="崩盤情境20年後（68%分布區間）"
           value={`${fmtM(summaryCards.finalLower)} ~ ${fmtM(summaryCards.finalUpper)}`}
           sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalUpper)} ~ ${fmtM(summaryCards.finalNorm - summaryCards.finalLower)}`}
           accent="#BA7517" />
@@ -260,17 +260,17 @@ export default function CrashTab({ state }) {
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
           <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} />
           <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
-          <Tooltip formatter={(v, name) => { if (['fanBase','fanRange','扇形上緣','扇形下緣'].includes(name)) return null; return v !== null ? [fmtM(v), name] : null }}
+          <Tooltip formatter={(v, name) => { if (['fanBase','fanRange'].includes(name)) return null; return v !== null ? [fmtM(v), name] : null }}
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }} />
           {/* 扇形填色區：stackId 技巧，fanBase 透明（佔位到下緣），fanRange 半透明紅（下緣到上緣） */}
           <Area type="monotone" dataKey="fanBase" stackId="fan" stroke="none" fill="transparent" fillOpacity={0} legendType="none" tooltipType="none" />
           <Area type="monotone" dataKey="fanRange" stackId="fan" stroke="none" fill="#E24B4A" fillOpacity={0.15} legendType="none" tooltipType="none" />
           {/* 主線 */}
-          <Line type="monotone" dataKey="正常複利" stroke="#1D9E75" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="崩盤中央" stroke="#E24B4A" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="扇形上緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
-          <Line type="monotone" dataKey="扇形下緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
-          <Line type="monotone" dataKey="總投入" stroke="#888888" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+          <Line type="monotone" dataKey="正常複利" name="正常複利" stroke="#1D9E75" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="分布上緣" name="分布上緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+          <Line type="monotone" dataKey="中央預測" name="中央預測" stroke="#E24B4A" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="分布下緣" name="分布下緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+          <Line type="monotone" dataKey="總投入" name="總投入" stroke="#888888" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
         </ComposedChart>
       </ResponsiveContainer>
 
@@ -279,10 +279,16 @@ export default function CrashTab({ state }) {
           <span style={{ width: 12, height: 3, background: '#1D9E75', display: 'inline-block' }} />正常複利
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 12, height: 3, background: '#E24B4A', display: 'inline-block' }} />崩盤中央值
+          <span style={{ width: 12, height: 2, borderTop: '1px dashed #E24B4A', display: 'inline-block' }} />分布上緣
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 20, height: 8, background: 'rgba(226,75,74,0.15)', border: '1px dashed #E24B4A', display: 'inline-block', borderRadius: 2 }} />±1σ 扇形（68%區間）
+          <span style={{ width: 12, height: 3, background: '#E24B4A', display: 'inline-block' }} />中央預測
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 12, height: 2, borderTop: '1px dashed #E24B4A', display: 'inline-block' }} />分布下緣
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 20, height: 8, background: 'rgba(226,75,74,0.15)', border: '1px dashed #E24B4A', display: 'inline-block', borderRadius: 2 }} />68% 分布區間
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ width: 12, height: 2, borderTop: '2px dashed #888', display: 'inline-block' }} />總投入
@@ -312,7 +318,7 @@ export default function CrashTab({ state }) {
           <span style={{ fontWeight: 600 }}>加權融合</span>：本模型承認現實中兩種類型幾乎不會純粹獨立發生。流動性危機也會造成部分結構傷害，結構重置同時引發資金大規模移動。因此兩個按鈕對應的是不同的加權比例，而非非此即彼的二元選擇。
         </div>
         <div>
-          <span style={{ fontWeight: 600 }}>扇形區間</span>：代表最後一次崩盤發生後，未來路徑的統計不確定性。採對數常態分佈，以台股歷史年化波動率約18%估算±1個標準差，時間越遠扇形越寬，反映「預測越遠越不確定」的現實。扇形的上下緣不是最好和最壞的情境，而是統計上約68%機率會落在其中的範圍。
+          <span style={{ fontWeight: 600 }}>分布區間</span>：代表最後一次崩盤發生後，未來路徑的統計不確定性。採對數常態分佈，以台股歷史年化波動率約18%估算±1個標準差（約68%機率區間）。分布上下緣不是最好和最壞的情境，而是統計上約68%機率落在其中的範圍，時間越遠分布越寬，反映「預測越遠越不確定」的現實。中央預測值為加權融合演算法的期望路徑，上下緣為對數常態分佈的±1σ邊界。
         </div>
       </div>
     </div>

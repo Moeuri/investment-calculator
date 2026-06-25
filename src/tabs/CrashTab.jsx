@@ -167,12 +167,17 @@ export default function CrashTab({ state }) {
       const y = i + 1, mo = y * 12
       const cv = crashVals[mo]
       const isAfterFan = mo > fanStart && fanStart >= 0
+      const upperVal = isAfterFan ? Math.round(upper[mo]) : null
+      const lowerVal = isAfterFan ? Math.round(lower[mo]) : null
       return {
         year: `${y}年`,
-        '正常複利': Math.round(norm[mo]),
-        '崩盤中央': Math.round(cv),
-        '扇形上緣': isAfterFan ? Math.round(upper[mo]) : null,
-        '扇形下緣': isAfterFan ? Math.round(lower[mo]) : null,
+        '正常複利':  Math.round(norm[mo]),
+        '崩盤中央':  Math.round(cv),
+        // stackId 技巧：fanBase 從 0 到下緣（透明），fanRange 從下緣到上緣（半透明紅）
+        'fanBase':  lowerVal,
+        'fanRange': (upperVal !== null && lowerVal !== null) ? upperVal - lowerVal : null,
+        '扇形上緣': upperVal,
+        '扇形下緣': lowerVal,
         '總投入':   Math.round(Math.min(cost, ls + amt * mo)),
       }
     })
@@ -256,9 +261,9 @@ export default function CrashTab({ state }) {
           <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
           <Tooltip formatter={(v, name) => v !== null ? [fmtM(v), name] : null}
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }} />
-          {/* 扇形填色區 */}
-          <Area type="monotone" dataKey="扇形上緣" stroke="none" fill="#E24B4A" fillOpacity={0.12} legendType="none" />
-          <Area type="monotone" dataKey="扇形下緣" stroke="none" fill="#fff" fillOpacity={1} legendType="none" />
+          {/* 扇形填色區：stackId 技巧，fanBase 透明（佔位到下緣），fanRange 半透明紅（下緣到上緣） */}
+          <Area type="monotone" dataKey="fanBase" stackId="fan" stroke="none" fill="transparent" fillOpacity={0} legendType="none" />
+          <Area type="monotone" dataKey="fanRange" stackId="fan" stroke="none" fill="#E24B4A" fillOpacity={0.15} legendType="none" />
           {/* 主線 */}
           <Line type="monotone" dataKey="正常複利" stroke="#1D9E75" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
           <Line type="monotone" dataKey="崩盤中央" stroke="#E24B4A" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />

@@ -2,6 +2,16 @@ import { Divider, Note } from '../components'
 
 const VERSIONS = [
   {
+    ver: 'v1.8.0',
+    date: '2026',
+    changes: [
+      '崩盤模擬：重大演算法重構（修正根本性邏輯錯誤）——採混合批次追蹤法：崩盤前累積資產合為「持有池」承受跌幅，崩盤後每月新投入獨立按正常年化複利追蹤，確保崩後投入本金不被衰減侵蝕',
+      '崩盤模擬：正確處理多次崩盤情境（定期定額6-8年遇到3次崩盤、一次性+定期定額混合、崩盤在持有期等邊界情況）',
+      '崩盤模擬：正常複利基準線說明加入「以009816完美運行狀態估算」及可展開的原因說明',
+      '崩盤模擬：頂部警告加入009816基準說明；底部說明新增「定期定額批次追蹤」邏輯解說',
+    ],
+  },
+  {
     ver: 'v1.7',
     date: '2026',
     changes: [
@@ -70,7 +80,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 13, color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v1.7</div>
+          <div>目前版本：v1.8.0</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

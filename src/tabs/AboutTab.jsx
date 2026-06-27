@@ -2,6 +2,17 @@ import { Divider, Note } from '../components'
 
 const VERSIONS = [
   {
+    ver: 'v1.8.2',
+    date: '2026-06-28',
+    changes: [
+      'Bug fix：退休提領分頁計算錯誤修正——退休年份設定超過20年時，現在能正確計算退休資產（舊版因陣列長度限制固定輸出第20年數值）',
+      'Bug fix：高股息ETF分頁——每月投入為0時「達標尚需追加月數」顯示 Infinity 問題修正；三檔比例全為0時除以零問題修正',
+      '新功能：高股息ETF分頁新增「稅後配息試算」區塊——可選配息所得稅率，顯示稅前月均、二代健保補充費（2.11%）及稅後月均淨領',
+      '新功能：崩盤模擬摘要卡片新增損失金額顯示（崩盤當下損失幾元、幾%）',
+      '新功能：Header 新增「重設」按鈕（一鍵回到預設值）與「分享」按鈕（將當前所有設定編碼至URL，可複製連結分享特定情境）',
+    ],
+  },
+  {
     ver: 'v1.8.1',
     date: '2026',
     changes: [
@@ -89,7 +100,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 13, color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v1.8.1</div>
+          <div>目前版本：v1.8.2</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

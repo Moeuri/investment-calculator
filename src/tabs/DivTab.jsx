@@ -1,6 +1,14 @@
 import { useMemo } from 'react'
 import { Card, Note, Slider, SectionTitle, Divider } from '../components'
-import { fmtM, fmtPA, ETF_DATA, MONTH_NAMES } from '../utils'
+import { fmtM, fmtPA, ETF_DATA, MONTH_NAMES, TH } from '../utils'
+
+const TAX_OPTS = [
+  { v: 0,    label: '免稅' },
+  { v: 0.05, label: '5%'  },
+  { v: 0.12, label: '12%' },
+  { v: 0.20, label: '20%' },
+  { v: 0.30, label: '30%' },
+]
 
 const RATIO_PRESETS = [
   { v: '40,30,30', label: '每月領息均衡',   desc: '三檔錯開季配，每月皆有一檔配息，領息最平均' },
@@ -50,7 +58,7 @@ function DivCalendar({ weights, total }) {
 }
 
 export default function DivTab({ state, set }) {
-  const { amt, dvTotal, dvW, dvTarget } = state
+  const { amt, dvTotal, dvW, dvTarget, dvTax = 0 } = state
 
   const wNorm = useMemo(() => {
     const sum = dvW.reduce((a, b) => a + b, 0)
@@ -61,8 +69,10 @@ export default function DivTab({ state, set }) {
   const dvYrArr    = dvAmts.map((a, i) => a * ETF_DATA[i].yield10yr)
   const dvYrTotal  = dvYrArr.reduce((a, b) => a + b, 0)
   const dvAvgYield = wNorm.reduce((acc, w, i) => acc + w * ETF_DATA[i].yield10yr, 0)
-  const dvNeed     = dvTarget * 12 / dvAvgYield
+  const dvNeed     = dvAvgYield > 0 ? dvTarget * 12 / dvAvgYield : 0
   const dvDiff     = dvNeed - dvTotal
+  const dvMonthGross = dvYrTotal / 12
+  const dvMonthNet   = dvMonthGross * (1 - TH - dvTax)
 
   const presetVal = RATIO_PRESETS.find(p => {
     const [a, b, c] = p.v.split(',').map(Number)
@@ -153,6 +163,36 @@ export default function DivTab({ state, set }) {
       </div>
 
       <Divider />
+      <SectionTitle>稅後配息試算</SectionTitle>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>配息所得稅率</span>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flex: 1 }}>
+          {TAX_OPTS.map(o => {
+            const on = dvTax === o.v
+            return (
+              <button key={o.v} onClick={() => set('dvTax', o.v)} style={{
+                padding: '5px 11px', borderRadius: 'var(--radius-sm)',
+                border: `0.5px solid ${on ? 'transparent' : 'var(--c-border2)'}`,
+                background: on ? 'var(--c-blue-bg)' : 'var(--c-bg)',
+                color: on ? 'var(--c-blue)' : 'var(--c-text2)',
+                fontSize: 12, fontWeight: on ? 600 : 400, cursor: 'pointer',
+              }}>{o.label}</button>
+            )
+          })}
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
+        <Card label="稅前月均配息" value={fmtM(dvMonthGross) + '/月'} sub="年配息 ÷ 12" />
+        <Card label="二代健保補充費" value={`-${fmtM(dvMonthGross * TH)}/月`} sub={`費率 ${(TH*100).toFixed(2)}%（固定）`} accent="var(--c-orange)" />
+        <Card label="稅後月均淨領" value={fmtM(dvMonthNet) + '/月'}
+          sub={dvTax > 0 ? `扣健保費＋${(dvTax*100).toFixed(0)}%所得稅` : '扣健保補充費後'}
+          accent="var(--c-green)" />
+      </div>
+      <Note mt={0}>
+        二代健保補充費率 2.11% 為固定費率。所得稅依個人綜所稅率申報，實際應繳金額以年度申報結果為準。
+      </Note>
+
+      <Divider />
       <SectionTitle>配息月曆（各月實際配息ETF）</SectionTitle>
       <DivCalendar weights={dvW} total={dvTotal} />
 
@@ -169,8 +209,8 @@ export default function DivTab({ state, set }) {
           sub={dvDiff > 0 ? '需追加本金' : '✅ 已達標'}
           accent={dvDiff > 0 ? 'var(--c-orange)' : 'var(--c-green)'} />
         <Card label="達標尚需追加月數"
-          value={dvDiff > 0 ? `約 ${Math.ceil(dvDiff/amt)} 個月` : '已達標'}
-          sub={`以每月 ${fmtM(amt)} 估算`} />
+          value={dvDiff > 0 ? (amt > 0 ? `約 ${Math.ceil(dvDiff/amt)} 個月` : '請設定每月投入') : '已達標'}
+          sub={amt > 0 ? `以每月 ${fmtM(amt)} 估算` : '請至定期定額分頁設定'} />
       </div>
 
       {dvDiff > 0

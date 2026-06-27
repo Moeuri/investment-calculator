@@ -11,11 +11,11 @@ function calcRetirementPV(monthlyDraw, drawRate, years) {
   return monthlyDraw * (1 - Math.pow(1 + mr, -n)) / mr
 }
 
-function buildWithLumpSum(lumpSum, amt, per, annR) {
+function buildWithLumpSum(lumpSum, amt, per, annR, months = 240) {
   const mr = annR / 12
-  const out = new Float64Array(241)
+  const out = new Float64Array(months + 1)
   let v = lumpSum || 0
-  for (let mo = 1; mo <= 240; mo++) {
+  for (let mo = 1; mo <= months; mo++) {
     v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
     out[mo] = v
   }
@@ -35,9 +35,10 @@ export default function DrawTab({ state, set }) {
   // 衝突偵測：退休時間早於定期定額結束
   const hasConflict = retireAfter < dcaEndYr
 
-  // 退休時的帳上資產
-  const norm    = useMemo(() => buildWithLumpSum(ls, amt, per, r1), [ls, amt, per, r1])
-  const startV  = norm[retireEndMo] || norm[240]
+  // 退休時的帳上資產（陣列延伸至最大退休月份，修正 >20年時取到 undefined 的 Bug）
+  const maxMo   = Math.max(240, retireEndMo)
+  const norm    = useMemo(() => buildWithLumpSum(ls, amt, per, r1, maxMo), [ls, amt, per, r1, maxMo])
+  const startV  = norm[retireEndMo]
 
   // 提領模擬
   const { chartData, drawExhaust } = useMemo(() => {

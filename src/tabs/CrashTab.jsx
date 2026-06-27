@@ -303,7 +303,9 @@ export default function CrashTab({ state }) {
         <Card label="正常複利20年（無崩盤）" value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
         <Card label="最後崩盤當下底部資產"
           value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
-          sub={summaryCards.lastCrash ? `第${summaryCards.lastCrash.when}年，跌${summaryCards.lastCrash.drop}%` : '無啟用崩盤'}
+          sub={summaryCards.lastCrash
+            ? `第${summaryCards.lastCrash.when}年 · 損失 ${fmtM(summaryCards.assetAtLastCrash - summaryCards.bottomAtLastCrash)}（-${summaryCards.lastCrash.drop}%）`
+            : '無啟用崩盤'}
           accent="#E24B4A" />
         <Card label="崩盤情境20年後（68%分布區間）"
           value={`${fmtM(summaryCards.finalLower)} ~ ${fmtM(summaryCards.finalUpper)}`}

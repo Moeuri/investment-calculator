@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import DCATab      from './tabs/DCATab'
 import CompareTab  from './tabs/CompareTab'
 import CrashTab    from './tabs/CrashTab'
@@ -39,6 +39,20 @@ const INIT = {
   dvTotal:      150000,
   dvW:          [40, 30, 30],
   dvTarget:     50000,
+  dvTax:        0,
+}
+
+function encodeShare(state, tab) {
+  try { return btoa(JSON.stringify({ ...state, _tab: tab })) } catch { return '' }
+}
+
+function parseHash() {
+  try {
+    if (!window.location.hash) return null
+    const obj = JSON.parse(atob(window.location.hash.slice(1)))
+    const { _tab, ...rest } = obj
+    return { stateOverride: { ...INIT, ...rest }, tab: _tab || 'dca' }
+  } catch { return null }
 }
 
 const FONT_SIZES = [
@@ -48,9 +62,11 @@ const FONT_SIZES = [
 ]
 
 export default function App() {
-  const [tab,      setTab]      = useState('dca')
-  const [state,    setState]    = useState(INIT)
-  const [fontSize, setFontSize] = useState('medium')
+  const parsed = useRef(parseHash()).current
+  const [tab,         setTab]         = useState(parsed?.tab || 'dca')
+  const [state,       setState]       = useState(parsed?.stateOverride || INIT)
+  const [fontSize,    setFontSize]    = useState('medium')
+  const [shareCopied, setShareCopied] = useState(false)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-font', fontSize)
@@ -59,6 +75,23 @@ export default function App() {
   const set = useCallback((key, val) => {
     setState(prev => ({ ...prev, [key]: val }))
   }, [])
+
+  function handleReset() {
+    setState(INIT)
+    history.replaceState(null, '', window.location.pathname)
+  }
+
+  function handleShare() {
+    const encoded = encodeShare(state, tab)
+    if (!encoded) return
+    const url = `${window.location.origin}${window.location.pathname}#${encoded}`
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    }).catch(() => {
+      window.prompt('複製此連結以分享目前設定：', url)
+    })
+  }
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 16px 80px' }}>
@@ -69,7 +102,7 @@ export default function App() {
       }}>
         <div>
           <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v1.8.1 · Huang Yen-han</div>
+          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v1.8.2 · Huang Yen-han</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -83,6 +116,20 @@ export default function App() {
                 fontWeight: fontSize === f.v ? 600 : 400,
               }}>{f.label}</button>
             ))}
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={handleReset} style={{
+              padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+              border: '0.5px solid var(--c-border2)', background: 'var(--c-bg)',
+              color: 'var(--c-text3)',
+            }}>重設</button>
+            <button onClick={handleShare} style={{
+              padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+              border: `0.5px solid ${shareCopied ? 'var(--c-green)' : 'var(--c-border2)'}`,
+              background: shareCopied ? 'var(--c-green-bg)' : 'var(--c-bg)',
+              color: shareCopied ? 'var(--c-green)' : 'var(--c-text3)',
+              fontWeight: shareCopied ? 600 : 400,
+            }}>{shareCopied ? '✓ 已複製' : '分享'}</button>
           </div>
           <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', textAlign: 'right', lineHeight: 1.5 }}>
             每月投入 {(state.amt / 10000).toFixed(1)}萬　年化 {(state.dr * 100).toFixed(1)}%

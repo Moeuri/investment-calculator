@@ -25,6 +25,35 @@
   --c-suc: #146c4e;
   --radius: 8px;
   --radius-sm: 5px;
+  /* 字體大小（預設中）*/
+  --font-base: 14px;
+  --font-sm: 12px;
+  --font-xs: 11px;
+  --font-lg: 16px;
+  --font-xl: 18px;
+}
+
+/* 字體大小三檔 */
+html[data-font="small"] {
+  --font-base: 12px;
+  --font-sm: 11px;
+  --font-xs: 10px;
+  --font-lg: 14px;
+  --font-xl: 16px;
+}
+html[data-font="medium"] {
+  --font-base: 14px;
+  --font-sm: 12px;
+  --font-xs: 11px;
+  --font-lg: 16px;
+  --font-xl: 18px;
+}
+html[data-font="large"] {
+  --font-base: 16px;
+  --font-sm: 14px;
+  --font-xs: 12px;
+  --font-lg: 18px;
+  --font-xl: 21px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -55,7 +84,7 @@ body {
     'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
   background: var(--c-bg);
   color: var(--c-text);
-  font-size: 14px;
+  font-size: var(--font-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -67,7 +96,6 @@ input[type=range] {
 }
 
 button { font-family: inherit; cursor: pointer; }
-
 canvas { display: block; }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

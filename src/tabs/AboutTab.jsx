@@ -2,6 +2,15 @@ import { Divider, Note } from '../components'
 
 const VERSIONS = [
   {
+    ver: 'v1.8.1',
+    date: '2026',
+    changes: [
+      'UI：Header 新增三檔字體大小切換（小／中／大），套用至全頁面所有文字',
+      'README：補上 v1.8.0 更新記錄（前版漏記）',
+      '確認 InsTab 009816 報酬率已與定期定額分頁全域同步（無需額外修改）',
+    ],
+  },
+  {
     ver: 'v1.8.0',
     date: '2026',
     changes: [
@@ -80,7 +89,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 13, color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v1.8.0</div>
+          <div>目前版本：v1.8.1</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

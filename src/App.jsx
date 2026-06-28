@@ -65,7 +65,7 @@ export default function App() {
   const parsed = useRef(parseHash()).current
   const [tab,         setTab]         = useState(parsed?.tab || 'dca')
   const [state,       setState]       = useState(parsed?.stateOverride || INIT)
-  const [fontSize,    setFontSize]    = useState('medium')
+  const [fontSize,    setFontSize]    = useState('small')
   const [shareCopied, setShareCopied] = useState(false)
 
   useEffect(() => {

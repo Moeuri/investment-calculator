@@ -25,7 +25,7 @@
   --c-suc: #146c4e;
   --radius: 8px;
   --radius-sm: 5px;
-  /* 字體大小（預設中）*/
+  /* 字體大小（預設小）*/
   --font-base: 14px;
   --font-sm: 12px;
   --font-xs: 11px;
@@ -35,25 +35,25 @@
 
 /* 字體大小三檔 */
 html[data-font="small"] {
-  --font-base: 12px;
-  --font-sm: 11px;
-  --font-xs: 10px;
-  --font-lg: 14px;
-  --font-xl: 16px;
-}
-html[data-font="medium"] {
   --font-base: 14px;
   --font-sm: 12px;
   --font-xs: 11px;
   --font-lg: 16px;
   --font-xl: 18px;
 }
-html[data-font="large"] {
+html[data-font="medium"] {
   --font-base: 16px;
   --font-sm: 14px;
   --font-xs: 12px;
   --font-lg: 18px;
   --font-xl: 21px;
+}
+html[data-font="large"] {
+  --font-base: 18px;
+  --font-sm: 16px;
+  --font-xs: 13px;
+  --font-lg: 20px;
+  --font-xl: 24px;
 }
 
 @media (prefers-color-scheme: dark) {

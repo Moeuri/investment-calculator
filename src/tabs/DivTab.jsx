@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { Card, Note, Slider, SectionTitle, Divider } from '../components'
 import { fmtM, fmtPA, ETF_DATA, MONTH_NAMES, TH } from '../utils'
 
@@ -35,20 +35,20 @@ function DivCalendar({ weights, total }) {
             background: etf ? ETF_DATA[etfIdx].color + '18' : 'var(--c-bg2)',
             border: `0.5px solid ${etf ? ETF_DATA[etfIdx].color + '55' : 'var(--c-border)'}`,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: etf ? ETF_DATA[etfIdx].color : 'var(--c-text3)' }}>
+            <div style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: etf ? ETF_DATA[etfIdx].color : 'var(--c-text3)' }}>
               {mo}
             </div>
             {etf ? (
               <>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text)', marginTop: 2 }}>
+                <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-text)', marginTop: 2 }}>
                   {etf.code}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--c-text2)', marginTop: 1 }}>
+                <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text2)', marginTop: 1 }}>
                   約 {fmtM(divAmt)}
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>無配息</div>
+              <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>無配息</div>
             )}
           </div>
         )
@@ -95,7 +95,7 @@ export default function DivTab({ state, set }) {
 
       {/* 推薦配置 */}
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 13, color: 'var(--c-text2)', marginBottom: 7 }}>推薦配置</div>
+        <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', marginBottom: 7 }}>推薦配置</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {RATIO_PRESETS.map(p => {
             const on = presetVal === p.v
@@ -106,10 +106,10 @@ export default function DivTab({ state, set }) {
                 border: `0.5px solid ${on ? 'var(--c-green)' : 'var(--c-border)'}`,
                 background: on ? 'var(--c-green-bg)' : 'var(--c-bg)', cursor: 'pointer',
               }}>
-                <div style={{ fontSize: 13, fontWeight: on ? 600 : 400, color: on ? 'var(--c-green)' : 'var(--c-text)' }}>
+                <div style={{ fontSize: 'var(--font-md)', fontWeight: on ? 600 : 400, color: on ? 'var(--c-green)' : 'var(--c-text)' }}>
                   {p.label}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--c-text3)', marginTop: 2 }}>
+                <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>
                   {p.desc}　（0056:{a}% / 00878:{b}% / 00919:{c}%）
                 </div>
               </button>
@@ -135,20 +135,20 @@ export default function DivTab({ state, set }) {
             border: `0.5px solid var(--c-border)`,
             borderTop: `3px solid ${etf.color}`,
           }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text)', marginBottom: 2 }}>{etf.code}</div>
-            <div style={{ fontSize: 11, color: 'var(--c-text3)', marginBottom: 6 }}>
+            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 2 }}>{etf.code}</div>
+            <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginBottom: 6 }}>
               {etf.name}｜{etf.freq}｜殖利率{(etf.yield10yr*100).toFixed(0)}%
             </div>
-            <div style={{ fontSize: 11, color: 'var(--c-text3)', marginBottom: 6 }}>
+            <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginBottom: 6 }}>
               配息月：{etf.divMonths.join('/')}月
             </div>
             <div style={{ background: 'var(--c-bg2)', borderRadius: 6, padding: '6px 8px', marginBottom: 6 }}>
-              <div style={{ fontSize: 11, color: 'var(--c-text3)' }}>投入金額</div>
-              <div style={{ fontSize: 15, fontWeight: 600 }}>{fmtM(dvAmts[i])}</div>
+              <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>投入金額</div>
+              <div style={{ fontSize: 'var(--font-lg)', fontWeight: 600 }}>{fmtM(dvAmts[i])}</div>
             </div>
             <div style={{ background: 'var(--c-bg2)', borderRadius: 6, padding: '6px 8px' }}>
-              <div style={{ fontSize: 11, color: 'var(--c-text3)' }}>年配息估算</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: etf.color }}>{fmtM(dvYrArr[i])}/年</div>
+              <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>年配息估算</div>
+              <div style={{ fontSize: 'var(--font-lg)', fontWeight: 600, color: etf.color }}>{fmtM(dvYrArr[i])}/年</div>
             </div>
           </div>
         ))}
@@ -165,7 +165,7 @@ export default function DivTab({ state, set }) {
       <Divider />
       <SectionTitle>稅後配息試算</SectionTitle>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>配息所得稅率</span>
+        <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>配息所得稅率</span>
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flex: 1 }}>
           {TAX_OPTS.map(o => {
             const on = dvTax === o.v
@@ -175,7 +175,7 @@ export default function DivTab({ state, set }) {
                 border: `0.5px solid ${on ? 'transparent' : 'var(--c-border2)'}`,
                 background: on ? 'var(--c-blue-bg)' : 'var(--c-bg)',
                 color: on ? 'var(--c-blue)' : 'var(--c-text2)',
-                fontSize: 12, fontWeight: on ? 600 : 400, cursor: 'pointer',
+                fontSize: 'var(--font-sm)', fontWeight: on ? 600 : 400, cursor: 'pointer',
               }}>{o.label}</button>
             )
           })}

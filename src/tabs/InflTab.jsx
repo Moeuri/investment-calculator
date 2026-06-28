@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { Card, Note, SectionTitle, BtnGroup, InvestChart, Legend, Divider } from '../components'
 import { buildNorm, fmtM, fmtPA, EXP1 } from '../utils'
 
@@ -53,9 +53,9 @@ export default function InflTab({ state, set }) {
       </Note>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0' }}>
-        <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>年通膨率</span>
+        <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>年通膨率</span>
         <BtnGroup value={infl} onChange={v => set('infl', v)} options={INFL_OPTS} />
-        <span style={{ fontSize: 13, fontWeight: 600, minWidth: 60, textAlign: 'right' }}>{(infl*100).toFixed(1)}%</span>
+        <span style={{ fontSize: 'var(--font-md)', fontWeight: 600, minWidth: 60, textAlign: 'right' }}>{(infl*100).toFixed(1)}%</span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 7, margin: '10px 0' }}>
@@ -69,7 +69,7 @@ export default function InflTab({ state, set }) {
       <Divider />
       <SectionTitle>
         儲蓄險年領 {fmtM(insAnn)} 的實質購買力侵蝕
-        {insAnn === 150000 && <span style={{ fontSize: 11, color: 'var(--c-text3)', fontWeight: 400, marginLeft: 6 }}>（可在「儲蓄險 vs 股市」分頁調整）</span>}
+        {insAnn === 150000 && <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', fontWeight: 400, marginLeft: 6 }}>（可在「儲蓄險 vs 股市」分頁調整）</span>}
       </SectionTitle>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>

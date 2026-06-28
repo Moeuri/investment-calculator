@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { Card, Note, Slider, PhaseBar, SectionTitle, InvestChart, Legend, Divider } from '../components'
 import { fmtM, fmtPA, EXP0, EXP1, DIV, TH } from '../utils'
 
@@ -121,7 +121,7 @@ export default function DCATab({ state, set }) {
         value={amt} onChange={v => set('amt', v)}
         fmt={v => v === 0 ? '0（純一次性）' : v.toLocaleString() + ' 元'} />
 
-      <div style={{ fontSize: 12, color: 'var(--c-text3)', background: 'var(--c-bg2)', borderRadius: 6, padding: '7px 10px', marginBottom: 10 }}>
+      <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text3)', background: 'var(--c-bg2)', borderRadius: 6, padding: '7px 10px', marginBottom: 10 }}>
         📋 {modeDesc}
       </div>
 
@@ -135,7 +135,7 @@ export default function DCATab({ state, set }) {
 
       {/* 報酬率六檔 */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 13, color: 'var(--c-text2)', marginBottom: 8 }}>年化報酬率情境</div>
+        <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', marginBottom: 8 }}>年化報酬率情境</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
           {DR_PRESETS.map(p => {
             const on = dr === p.v
@@ -145,8 +145,8 @@ export default function DCATab({ state, set }) {
                 border: `0.5px solid ${on ? 'var(--c-green)' : 'var(--c-border)'}`,
                 background: on ? 'var(--c-green-bg)' : 'var(--c-bg)', cursor: 'pointer',
               }}>
-                <div style={{ fontSize: 13, fontWeight: on ? 700 : 500, color: on ? 'var(--c-green)' : 'var(--c-text)' }}>{p.label}</div>
-                <div style={{ fontSize: 10, color: on ? 'var(--c-green)' : 'var(--c-text3)', marginTop: 3, lineHeight: 1.3 }}>{p.tag}</div>
+                <div style={{ fontSize: 'var(--font-md)', fontWeight: on ? 700 : 500, color: on ? 'var(--c-green)' : 'var(--c-text)' }}>{p.label}</div>
+                <div style={{ fontSize: 'var(--font-2xs)', color: on ? 'var(--c-green)' : 'var(--c-text3)', marginTop: 3, lineHeight: 1.3 }}>{p.tag}</div>
               </button>
             )
           })}
@@ -156,7 +156,7 @@ export default function DCATab({ state, set }) {
 
       {/* 稅率 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>所得稅率（0050配息）</span>
+        <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>所得稅率（0050配息）</span>
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flex: 1 }}>
           {TAX_OPTS.map(o => {
             const on = tax === o.v
@@ -166,7 +166,7 @@ export default function DCATab({ state, set }) {
                 border: `0.5px solid ${on ? 'transparent' : 'var(--c-border2)'}`,
                 background: on ? 'var(--c-blue-bg)' : 'var(--c-bg)',
                 color: on ? 'var(--c-blue)' : 'var(--c-text2)',
-                fontSize: 12, fontWeight: on ? 600 : 400, cursor: 'pointer',
+                fontSize: 'var(--font-sm)', fontWeight: on ? 600 : 400, cursor: 'pointer',
               }}>{o.label}</button>
             )
           })}
@@ -177,7 +177,7 @@ export default function DCATab({ state, set }) {
       <Slider label="0050配息再投入效率" min={0} max={100} step={5}
         value={Math.round(rr * 100)} onChange={v => set('reinvestRate', v / 100)}
         fmt={v => v === 100 ? '100%（完美再投入）' : v === 0 ? '0%（配息全部領出）' : `${v}%（部分再投入）`} />
-      <div style={{ fontSize: 11, color: 'var(--c-text3)', marginBottom: 10, marginTop: -4 }}>
+      <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginBottom: 10, marginTop: -4 }}>
         現實中多數投資人無法做到100%即時再投入，建議設定60–80%較貼近實際情況
       </div>
 

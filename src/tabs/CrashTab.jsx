@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { Card, Note, SectionTitle, SubTab, Divider } from '../components'
 import { buildNorm, buildCrashN, calcFan, fmtM, CRASH_EVENTS, EXP1, MONTH_VOL } from '../utils'
 import {
@@ -22,9 +22,9 @@ function TypeBtn({ value, onChange }) {
             border: `1.5px solid ${on ? o.color : 'var(--c-border)'}`,
             background: on ? o.bg : 'var(--c-bg)', cursor: 'pointer',
           }}>
-            <div style={{ fontSize: 13, fontWeight: on ? 700 : 500, color: on ? o.color : 'var(--c-text)', marginBottom: 3 }}>{o.label}</div>
-            <div style={{ fontSize: 11, color: 'var(--c-text3)', lineHeight: 1.4, marginBottom: 4 }}>{o.sub}</div>
-            <div style={{ fontSize: 10, color: on ? o.color : 'var(--c-text3)', opacity: 0.8 }}>演算法：{o.weight}</div>
+            <div style={{ fontSize: 'var(--font-md)', fontWeight: on ? 700 : 500, color: on ? o.color : 'var(--c-text)', marginBottom: 3 }}>{o.label}</div>
+            <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', lineHeight: 1.4, marginBottom: 4 }}>{o.sub}</div>
+            <div style={{ fontSize: 'var(--font-2xs)', color: on ? o.color : 'var(--c-text3)', opacity: 0.8 }}>演算法：{o.weight}</div>
           </button>
         )
       })}
@@ -43,15 +43,15 @@ function DropSlider({ value, onChange }) {
   }
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-      <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>最大跌幅</span>
+      <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>最大跌幅</span>
       <input type="range" min={0} max={99} step={1} value={value}
         onChange={e => onChange(Number(e.target.value))} style={{ flex: 1 }} />
       {editing
         ? <input autoFocus value={raw} onChange={e => setRaw(e.target.value)}
             onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-            style={{ width: 80, fontSize: 13, fontWeight: 600, textAlign: 'right', border: '1.5px solid var(--c-blue)', borderRadius: 4, padding: '2px 6px', background: 'var(--c-bg)', color: 'var(--c-text)', outline: 'none' }} />
+            style={{ width: 80, fontSize: 'var(--font-md)', fontWeight: 600, textAlign: 'right', border: '1.5px solid var(--c-blue)', borderRadius: 4, padding: '2px 6px', background: 'var(--c-bg)', color: 'var(--c-text)', outline: 'none' }} />
         : <span onClick={() => { setRaw(String(value)); setEditing(true) }}
-            style={{ fontSize: 13, fontWeight: 600, minWidth: 80, textAlign: 'right', cursor: 'text', borderBottom: '1px dashed var(--c-border2)', paddingBottom: 1 }}>
+            style={{ fontSize: 'var(--font-md)', fontWeight: 600, minWidth: 80, textAlign: 'right', cursor: 'text', borderBottom: '1px dashed var(--c-border2)', paddingBottom: 1 }}>
             {value === 0 ? '0%（無崩跌）' : `-${value}%`}
           </span>}
     </div>
@@ -70,7 +70,7 @@ function CrashParamPanel({ c, setC, label }) {
   const note = c.evtIdx !== null ? CRASH_EVENTS[c.evtIdx]?.note : null
   return (
     <div>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginBottom: 12 }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 'var(--font-md)', marginBottom: 12 }}>
         <input type="checkbox" checked={c.enabled} onChange={e => setC({ ...c, enabled: e.target.checked })}
           style={{ width: 16, height: 16, accentColor: 'var(--c-red)', cursor: 'pointer' }} />
         <span style={{ fontWeight: 600, color: c.enabled ? 'var(--c-text)' : 'var(--c-text3)' }}>
@@ -86,24 +86,24 @@ function CrashParamPanel({ c, setC, label }) {
                 border: `0.5px solid ${c.evtIdx === i ? 'transparent' : 'var(--c-border)'}`,
                 background: c.evtIdx === i ? 'var(--c-red-bg)' : 'var(--c-bg)',
                 color: c.evtIdx === i ? 'var(--c-red)' : 'var(--c-text2)',
-                fontSize: 11, cursor: 'pointer', lineHeight: 1.4,
+                fontSize: 'var(--font-xs)', cursor: 'pointer', lineHeight: 1.4,
               }}>
                 <div>{ev.name.split(' ')[0]}</div>
-                <div style={{ fontSize: 10, marginTop: 2 }}>{ev.name.split(' ').slice(1).join(' ')}</div>
-                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>-{ev.drop}%</div>
+                <div style={{ fontSize: 'var(--font-2xs)', marginTop: 2 }}>{ev.name.split(' ').slice(1).join(' ')}</div>
+                <div style={{ fontSize: 'var(--font-2xs)', opacity: 0.7, marginTop: 2 }}>-{ev.drop}%</div>
               </button>
             ))}
           </div>
           {note && <Note type="info" mt={0}>{note}</Note>}
           <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 13, color: 'var(--c-text2)', marginBottom: 8 }}>崩盤性質</div>
+            <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', marginBottom: 8 }}>崩盤性質</div>
             <TypeBtn value={c.type} onChange={v => setC({ ...c, type: v, evtIdx: null })} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <span style={{ fontSize: 13, color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>崩盤發生（第幾年）</span>
+            <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>崩盤發生（第幾年）</span>
             <input type="range" min={1} max={19} step={1} value={c.when}
               onChange={e => setC({ ...c, when: Number(e.target.value) })} style={{ flex: 1 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, minWidth: 80, textAlign: 'right' }}>第 {c.when} 年</span>
+            <span style={{ fontSize: 'var(--font-md)', fontWeight: 600, minWidth: 80, textAlign: 'right' }}>第 {c.when} 年</span>
           </div>
           <DropSlider value={c.drop} onChange={v => setC({ ...c, drop: v, evtIdx: null })} />
         </>
@@ -122,49 +122,49 @@ function ExtremeSection() {
         borderRadius: open ? 'var(--radius) var(--radius) 0 0' : 'var(--radius)',
         cursor: 'pointer', border: '1px solid #C0392B',
         background: open ? '#1a0805' : 'transparent', color: '#E24B4A',
-        fontSize: 13, fontWeight: 600,
+        fontSize: 'var(--font-md)', fontWeight: 600,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span>📚 超出模型範圍的三種歷史極端情境</span>
-        <span style={{ fontSize: 14 }}>{open ? '▲ 收合' : '▼ 展開'}</span>
+        <span style={{ fontSize: 'var(--font-base)' }}>{open ? '▲ 收合' : '▼ 展開'}</span>
       </button>
       {open && (
         <div style={{
           border: '1px solid #C0392B', borderTop: 'none',
           borderRadius: '0 0 var(--radius) var(--radius)',
-          padding: '14px 16px', fontSize: 12, lineHeight: 1.8,
+          padding: '14px 16px', fontSize: 'var(--font-sm)', lineHeight: 1.8,
           background: 'var(--c-bg2)',
         }}>
-          <div style={{ fontSize: 12, color: 'var(--c-text3)', marginBottom: 14 }}>
+          <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text3)', marginBottom: 14 }}>
             以下三個歷史事件的實際走勢超出本模型的設計範圍。了解它們「為什麼特殊」，有助於理解模型邊界在哪裡，以及為什麼本模型的中央預測通常比實際歷史更保守——歷史上大多數崩盤的實際恢復速度快於模型預期，主要原因見各條說明。
           </div>
           <div style={{ marginBottom: 16, paddingLeft: 12, borderLeft: '3px solid #E24B4A' }}>
-            <div style={{ fontWeight: 700, color: 'var(--c-text)', marginBottom: 6, fontSize: 13 }}>💀 1929年美國大蕭條：跌89%，名目指數花了25年才回到前高</div>
+            <div style={{ fontWeight: 700, color: 'var(--c-text)', marginBottom: 6, fontSize: 'var(--font-md)' }}>💀 1929年美國大蕭條：跌89%，名目指數花了25年才回到前高</div>
             <div style={{ color: 'var(--c-text2)', marginBottom: 6 }}>
               這是有完整數據的歷史最嚴重崩盤。當時美元受金本位約束，美聯儲不只沒有護盤，反而在恐慌中<strong>升息</strong>，直接加速通縮螺旋。約9,000家銀行相繼倒閉，貨幣供給萎縮約三分之一，整個信用體系瓦解。疊加斯姆特—霍利關稅引發的貿易崩潰，以及隨後的二戰，最終名目指數等待25年才回到1929年高點。但含息後，有研究指出約7年左右投資人就已回本（1930年代為通縮期，現金購買力在升值）。
             </div>
-            <div style={{ color: 'var(--c-text3)', fontSize: 11, padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
+            <div style={{ color: 'var(--c-text3)', fontSize: 'var(--font-xs)', padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
               現代適用性：金本位已廢除（1971年），現代央行工具箱截然不同，FDIC存款保險防止了銀行連鎖倒閉。2008年時，柏南克以「不重蹈1930年代錯誤」為政策準則，避免了更糟的結果。
             </div>
           </div>
           <div style={{ marginBottom: 16, paddingLeft: 12, borderLeft: '3px solid #BA7517' }}>
-            <div style={{ fontWeight: 700, color: 'var(--c-text)', marginBottom: 6, fontSize: 13 }}>🇯🇵 1989年日本資產泡沫：跌82%，唯一「現代央行介入仍長期無效」的案例</div>
+            <div style={{ fontWeight: 700, color: 'var(--c-text)', marginBottom: 6, fontSize: 'var(--font-md)' }}>🇯🇵 1989年日本資產泡沫：跌82%，唯一「現代央行介入仍長期無效」的案例</div>
             <div style={{ color: 'var(--c-text2)', marginBottom: 6 }}>
               股市與房市泡沫同時破裂，但真正讓它無法恢復的是<strong>三重結構問題同時疊加</strong>：少子化與人口老化使長期成長引擎熄火；通縮螺旋讓降息刺激消費的機制完全失效；政府1997年在經濟仍虛弱時提高消費稅，直接引發第二次衰退。「殭屍企業」問題阻礙了正常的創造性破壞。
             </div>
-            <div style={{ color: 'var(--c-text3)', fontSize: 11, padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
+            <div style={{ color: 'var(--c-text3)', fontSize: 'var(--font-xs)', padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
               台灣適用性：台灣同樣面臨低生育率問題，但台積電等企業的全球競爭力提供強勁外需支撐，與日本1990年代後的內需依賴結構不同。
             </div>
           </div>
           <div style={{ paddingLeft: 12, borderLeft: '3px solid #1D9E75' }}>
-            <div style={{ fontWeight: 700, color: 'var(--c-text)', marginBottom: 6, fontSize: 13 }}>🚀 2020年疫情崩盤：跌34%，4個月回本，史上最快V型反彈</div>
+            <div style={{ fontWeight: 700, color: 'var(--c-text)', marginBottom: 6, fontSize: 'var(--font-md)' }}>🚀 2020年疫情崩盤：跌34%，4個月回本，史上最快V型反彈</div>
             <div style={{ color: 'var(--c-text2)', marginBottom: 6 }}>
               美聯儲比正式開會提前兩天緊急降息至零，並以每天最高1,250億美元速度購買資產，資產負債表兩個月從4.5兆暴增至7兆美元。美國國會同步通過約5.8兆美元財政刺激（約佔GDP的28%）。崩盤原因清晰可見（病毒），企業競爭力完好無損，市場在「等待解藥」的共識下快速恢復信心。
             </div>
-            <div style={{ color: 'var(--c-text3)', fontSize: 11, padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
+            <div style={{ color: 'var(--c-text3)', fontSize: 'var(--font-xs)', padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
               代表意義：2020年是「現代央行工具箱在最有利條件下的最佳表現」，說明了為什麼歷史上實際走勢往往比保守模型更樂觀。
             </div>
-            <div style={{ marginTop: 8, padding: '7px 10px', background: '#1a2e1a', border: '1px solid #2d5a2d', borderRadius: 4, fontSize: 11, color: '#7ec87e', lineHeight: 1.6 }}>
+            <div style={{ marginTop: 8, padding: '7px 10px', background: '#1a2e1a', border: '1px solid #2d5a2d', borderRadius: 4, fontSize: 'var(--font-xs)', color: '#7ec87e', lineHeight: 1.6 }}>
               ⚠️ 模型套用提醒：本計算器歷史事件選單包含「2020疫情崩盤」，但套用後的中央預測與分布範圍<strong>無法反映4個月閃回這個現實</strong>。若選用此事件，後續扇形分布區間將嚴重低估上行可能性，請理解為「如果這次崩跌沒有史無前例的政策介入會怎樣」的壓力測試，而非對2020年實際情況的模擬。
             </div>
           </div>
@@ -184,7 +184,7 @@ function BaselineSection() {
         borderRadius: open ? 'var(--radius) var(--radius) 0 0' : 'var(--radius)',
         cursor: 'pointer', border: '0.5px solid var(--c-border2)',
         background: open ? 'var(--c-bg3)' : 'var(--c-bg2)', color: 'var(--c-text2)',
-        fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        fontSize: 'var(--font-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span>📊 為什麼用 009816 作為正常複利基準？</span>
         <span>{open ? '▲' : '▼'}</span>
@@ -193,7 +193,7 @@ function BaselineSection() {
         <div style={{
           border: '0.5px solid var(--c-border2)', borderTop: 'none',
           borderRadius: '0 0 var(--radius) var(--radius)',
-          padding: '12px 14px', fontSize: 12, color: 'var(--c-text2)', lineHeight: 1.7,
+          padding: '12px 14px', fontSize: 'var(--font-sm)', color: 'var(--c-text2)', lineHeight: 1.7,
           background: 'var(--c-bg2)',
         }}>
           009816 採不配息設計，股利直接滾入淨值，無配息稅負、無再投入摩擦、年費用率僅約 0.097%，是台股 ETF 中複利效率最高的工具。以此作為正常複利基準，代表同等市場報酬條件下個人投資者理論上能取得的最佳複利效率，讓崩盤壓力測試的比較基準最為嚴格且一致。
@@ -263,8 +263,8 @@ export default function CrashTab({ state }) {
     <div>
       {/* 頂部紅色警告 */}
       <div style={{ background: '#C0392B', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>⚠️ 此模擬不是走勢預測，請先閱讀</div>
-        <div style={{ fontSize: 12, lineHeight: 1.7 }}>
+        <div style={{ fontSize: 'var(--font-base)', fontWeight: 700, marginBottom: 6 }}>⚠️ 此模擬不是走勢預測，請先閱讀</div>
+        <div style={{ fontSize: 'var(--font-sm)', lineHeight: 1.7 }}>
           本頁面的唯一目的是幫助你評估：如果發生某種崩盤情境，你的資產會變成什麼樣子，以及你是否能在心理和財務上承受這個過程而不提前出場。
           崩盤的發生時機、深度和恢復路徑在事前都無法預測。<b>提前在低點賣出才是定期定額投資者面臨崩盤時最大的風險，而不是帳面虧損本身。</b><br />
           正常複利基準線以 009816 完美運行狀態（不配息、費用率最低、無稅務摩擦）為計算假設。
@@ -317,14 +317,14 @@ export default function CrashTab({ state }) {
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
-          <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} />
-          <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 11, fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
+          <XAxis dataKey="year" tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} />
+          <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
           <Tooltip
             formatter={(v, name) => {
               if (['fanBase','fanRange'].includes(name)) return null
               return v !== null ? [fmtM(v), name] : null
             }}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }}
+            contentStyle={{ fontSize: 'var(--font-sm)', borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }}
           />
           <Area type="monotone" dataKey="fanBase"  stackId="fan" stroke="none" fill="transparent" fillOpacity={0} legendType="none" tooltipType="none" />
           <Area type="monotone" dataKey="fanRange" stackId="fan" stroke="none" fill="#E24B4A" fillOpacity={0.15} legendType="none" tooltipType="none" />
@@ -336,7 +336,7 @@ export default function CrashTab({ state }) {
         </ComposedChart>
       </ResponsiveContainer>
 
-      <div style={{ display: 'flex', gap: 14, marginTop: 7, fontSize: 11, color: 'var(--c-text3)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 14, marginTop: 7, fontSize: 'var(--font-xs)', color: 'var(--c-text3)', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: '#1D9E75', display: 'inline-block' }} />正常複利</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 2, borderTop: '1px dashed #E24B4A', display: 'inline-block' }} />分布上緣</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: '#E24B4A', display: 'inline-block' }} />中央預測</span>
@@ -351,8 +351,8 @@ export default function CrashTab({ state }) {
       <ExtremeSection />
 
       {/* 底部計算邏輯說明 */}
-      <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '14px 16px', fontSize: 12, color: 'var(--c-text2)', lineHeight: 1.8 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-text)', marginBottom: 8 }}>關於本模擬的計算邏輯</div>
+      <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '14px 16px', fontSize: 'var(--font-sm)', color: 'var(--c-text2)', lineHeight: 1.8 }}>
+        <div style={{ fontSize: 'var(--font-md)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 8 }}>關於本模擬的計算邏輯</div>
         <div style={{ marginBottom: 8 }}>本模擬將股市崩盤分為兩種性質，但實際上兩者往往相互影響、同時發生，只是比例不同。</div>
         <div style={{ marginBottom: 6 }}>
           <span style={{ fontWeight: 600, color: 'var(--c-blue)' }}>流動性危機型</span>：成因是資金在不同資產之間的快速移動，例如央行升降息改變資金的停泊成本、地緣政治衝突引發恐慌性拋售。資金重新找到定價共識後，市場有較大機率回到原有的成長趨勢線。

@@ -1,4 +1,4 @@
-import { Divider, Note } from '../components'
+﻿import { Divider, Note } from '../components'
 
 const VERSIONS = [
   {
@@ -97,8 +97,8 @@ export default function AboutTab() {
         padding: '16px 18px', marginBottom: 16,
         borderLeft: '4px solid var(--c-green)',
       }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
-        <div style={{ fontSize: 13, color: 'var(--c-text2)', lineHeight: 1.7 }}>
+        <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
+        <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
           <div>目前版本：v1.8.2</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
@@ -107,8 +107,8 @@ export default function AboutTab() {
       </div>
 
       <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-text)', marginBottom: 8 }}>版權宣告</div>
-        <div style={{ fontSize: 12, color: 'var(--c-text2)', lineHeight: 1.8 }}>
+        <div style={{ fontSize: 'var(--font-md)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 8 }}>版權宣告</div>
+        <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text2)', lineHeight: 1.8 }}>
           <div>© 2026 Huang Yen-han. All rights reserved.</div>
           <div>本計算器之程式碼、介面設計及內容均受著作權保護。</div>
           <div>未經授權，禁止以任何形式複製、改作、散布或商業使用。</div>
@@ -127,17 +127,17 @@ export default function AboutTab() {
 
       <Divider my={20} />
 
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-text)', marginBottom: 12 }}>版本更新紀錄</div>
+      <div style={{ fontSize: 'var(--font-base)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 12 }}>版本更新紀錄</div>
       {VERSIONS.map((v, i) => (
         <div key={v.ver} style={{ marginBottom: 14, paddingLeft: 14, borderLeft: `2px solid ${i === 0 ? 'var(--c-green)' : 'var(--c-border)'}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: i === 0 ? 'var(--c-green)' : 'var(--c-text)' }}>{v.ver}</span>
-            <span style={{ fontSize: 11, color: 'var(--c-text3)' }}>{v.date}</span>
-            {i === 0 && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--c-green-bg)', color: 'var(--c-green)', fontWeight: 600 }}>最新</span>}
+            <span style={{ fontSize: 'var(--font-md)', fontWeight: 700, color: i === 0 ? 'var(--c-green)' : 'var(--c-text)' }}>{v.ver}</span>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>{v.date}</span>
+            {i === 0 && <span style={{ fontSize: 'var(--font-2xs)', padding: '1px 6px', borderRadius: 4, background: 'var(--c-green-bg)', color: 'var(--c-green)', fontWeight: 600 }}>最新</span>}
           </div>
           <ul style={{ paddingLeft: 16, margin: 0 }}>
             {v.changes.map((c, j) => (
-              <li key={j} style={{ fontSize: 12, color: 'var(--c-text2)', lineHeight: 1.7, marginBottom: 2 }}>{c}</li>
+              <li key={j} style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text2)', lineHeight: 1.7, marginBottom: 2 }}>{c}</li>
             ))}
           </ul>
         </div>
@@ -145,7 +145,7 @@ export default function AboutTab() {
 
       <Divider my={16} />
 
-      <div style={{ fontSize: 12, color: 'var(--c-text3)', lineHeight: 1.8 }}>
+      <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text3)', lineHeight: 1.8 }}>
         <div style={{ fontWeight: 600, color: 'var(--c-text2)', marginBottom: 4 }}>技術說明</div>
         <div>前端框架：React 18 + Vite</div>
         <div>圖表套件：Recharts</div>

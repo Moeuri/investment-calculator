@@ -1,9 +1,9 @@
-import { Divider, Note } from '../components'
+﻿import { Divider, Note } from '../components'
 
 const SECTION = ({ title, children }) => (
   <div style={{ marginBottom: 20 }}>
     <div style={{
-      fontSize: 14, fontWeight: 700, color: 'var(--c-text)',
+      fontSize: 'var(--font-base)', fontWeight: 700, color: 'var(--c-text)',
       borderLeft: '3px solid var(--c-green)', paddingLeft: 10, marginBottom: 10,
     }}>{title}</div>
     {children}
@@ -17,13 +17,13 @@ const Row = ({ label, v0050, v9816, highlight }) => (
     background: highlight ? 'var(--c-bg2)' : 'transparent',
     borderRadius: 6, padding: highlight ? '8px 10px' : '2px 0',
   }}>
-    <div style={{ fontSize: 12, color: 'var(--c-text3)', display: 'flex', alignItems: 'center' }}>{label}</div>
+    <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text3)', display: 'flex', alignItems: 'center' }}>{label}</div>
     <div style={{
-      fontSize: 12, color: 'var(--c-text)', background: 'var(--c-blue-bg)',
+      fontSize: 'var(--font-sm)', color: 'var(--c-text)', background: 'var(--c-blue-bg)',
       borderRadius: 6, padding: '7px 10px', lineHeight: 1.5,
     }}>{v0050}</div>
     <div style={{
-      fontSize: 12, color: 'var(--c-text)', background: 'var(--c-green-bg)',
+      fontSize: 'var(--font-sm)', color: 'var(--c-text)', background: 'var(--c-green-bg)',
       borderRadius: 6, padding: '7px 10px', lineHeight: 1.5,
     }}>{v9816}</div>
   </div>
@@ -37,10 +37,10 @@ export default function CompareTab() {
         background: 'linear-gradient(135deg, var(--c-blue-bg) 0%, var(--c-green-bg) 100%)',
         borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 16,
       }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text)', marginBottom: 4 }}>
+        <div style={{ fontSize: 'var(--font-lg)', fontWeight: 700, color: 'var(--c-text)', marginBottom: 4 }}>
           0050 vs 009816 完整比較
         </div>
-        <div style={{ fontSize: 12, color: 'var(--c-text2)', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text2)', lineHeight: 1.6 }}>
           兩檔都追蹤台灣市值前50大企業，成分股重疊度高達90%以上，
           但選股邏輯、持股限制、配息機制與費用結構的差異，
           長期下來會讓報酬走出不同的路。資料更新至2026/6/24。
@@ -56,13 +56,13 @@ export default function CompareTab() {
         <div style={{
           background: 'var(--c-blue)', color: '#fff',
           borderRadius: 6, padding: '8px 10px', textAlign: 'center',
-          fontSize: 13, fontWeight: 700,
-        }}>0050<br /><span style={{ fontSize: 10, fontWeight: 400 }}>元大台灣50</span></div>
+          fontSize: 'var(--font-md)', fontWeight: 700,
+        }}>0050<br /><span style={{ fontSize: 'var(--font-2xs)', fontWeight: 400 }}>元大台灣50</span></div>
         <div style={{
           background: 'var(--c-green)', color: '#fff',
           borderRadius: 6, padding: '8px 10px', textAlign: 'center',
-          fontSize: 13, fontWeight: 700,
-        }}>009816<br /><span style={{ fontSize: 10, fontWeight: 400 }}>凱基台灣TOP50</span></div>
+          fontSize: 'var(--font-md)', fontWeight: 700,
+        }}>009816<br /><span style={{ fontSize: 'var(--font-2xs)', fontWeight: 400 }}>凱基台灣TOP50</span></div>
       </div>
 
       <SECTION title="基本資料">
@@ -116,7 +116,7 @@ export default function CompareTab() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
               <div style={{ fontWeight: 600, color: 'var(--c-blue)', marginBottom: 4 }}>0050（有配息）</div>
-              <div style={{ fontSize: 12, lineHeight: 1.7 }}>
+              <div style={{ fontSize: 'var(--font-sm)', lineHeight: 1.7 }}>
                 ✅ 完美再投入（稅率0%）：20年後約 <b>672萬</b><br />
                 ⚠️ 稅率20%＋延遲再投入：20年後約 <b>580萬</b>（實際年化約8.5%）<br />
                 ❌ 稅率40%＋不再投入：20年後本金＋配息約 <b>490萬</b>
@@ -124,7 +124,7 @@ export default function CompareTab() {
             </div>
             <div>
               <div style={{ fontWeight: 600, color: 'var(--c-green)', marginBottom: 4 }}>009816（不配息）</div>
-              <div style={{ fontSize: 12, lineHeight: 1.7 }}>
+              <div style={{ fontSize: 'var(--font-sm)', lineHeight: 1.7 }}>
                 ✅ 費後年化約11%（省稅＋自動複利）：20年後約 <b>806萬</b><br />
                 📊 差距來源：無稅摩擦（+0.5%）＋費用率低（+0.33%）＋自動再投入（+0.3–0.5%）<br />
                 ⚠️ 動能換股隱形成本尚未完整驗證
@@ -138,7 +138,7 @@ export default function CompareTab() {
       <SECTION title="配息可以領出來用的情況分析">
         <Note type="note" mt={0}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>如果你需要定期現金流，0050配息是否真的划算？</div>
-          <div style={{ fontSize: 12, lineHeight: 1.8 }}>
+          <div style={{ fontSize: 'var(--font-sm)', lineHeight: 1.8 }}>
             <div>📌 <b>持有100萬0050，年化配息約2–3%，每年領回2–3萬元</b></div>
             <div>扣除配息稅（0%~40%視稅率）和可能的健保補充費後，實際入袋金額約1.2–3萬元</div>
             <div style={{ marginTop: 6 }}>📌 <b>009816替代方案：每年賣出相同金額的單位數</b></div>
@@ -153,8 +153,8 @@ export default function CompareTab() {
       <SECTION title="誰適合哪一檔？">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div style={{ background: 'var(--c-blue-bg)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-blue)', marginBottom: 8 }}>選 0050 如果你...</div>
-            <div style={{ fontSize: 12, color: 'var(--c-text)', lineHeight: 1.8 }}>
+            <div style={{ fontSize: 'var(--font-md)', fontWeight: 700, color: 'var(--c-blue)', marginBottom: 8 }}>選 0050 如果你...</div>
+            <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text)', lineHeight: 1.8 }}>
               ✅ 需要每半年有現金配息支付生活費<br />
               ✅ 重視22年歷史驗證與高流動性<br />
               ✅ 看好台積電持續引領台股<br />
@@ -163,8 +163,8 @@ export default function CompareTab() {
             </div>
           </div>
           <div style={{ background: 'var(--c-green-bg)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-green)', marginBottom: 8 }}>選 009816 如果你...</div>
-            <div style={{ fontSize: 12, color: 'var(--c-text)', lineHeight: 1.8 }}>
+            <div style={{ fontSize: 'var(--font-md)', fontWeight: 700, color: 'var(--c-green)', marginBottom: 8 }}>選 009816 如果你...</div>
+            <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text)', lineHeight: 1.8 }}>
               ✅ 不需要定期配息，專注長期資產累積<br />
               ✅ 想省下配息稅與健保補充費<br />
               ✅ 希望複利全自動，不需手動再投入<br />

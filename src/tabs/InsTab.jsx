@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { Card, Note, Slider, SectionTitle, InvestChart, Legend, Divider } from '../components'
 import { fmtM, fmtPA, EXP1 } from '../utils'
 
@@ -47,19 +47,19 @@ function ProsCons() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, margin: '12px 0' }}>
         {/* 儲蓄險 */}
         <div style={{ borderRadius: 'var(--radius)', border: '0.5px solid var(--c-border)', overflow: 'hidden' }}>
-          <div style={{ background: '#BA7517', color: '#fff', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>
+          <div style={{ background: '#BA7517', color: '#fff', padding: '8px 12px', fontSize: 'var(--font-md)', fontWeight: 700 }}>
             🏦 儲蓄型保險
           </div>
           <div style={{ padding: '10px 12px' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-suc)', marginBottom: 6 }}>✅ 優點</div>
+            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-suc)', marginBottom: 6 }}>✅ 優點</div>
             {PROS_CONS.ins.pros.map((p, i) => (
-              <div key={i} style={{ fontSize: 11, color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
+              <div key={i} style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
                 <span style={{ color: 'var(--c-green)', flexShrink: 0 }}>+</span>{p}
               </div>
             ))}
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-red)', margin: '10px 0 6px' }}>❌ 缺點</div>
+            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-red)', margin: '10px 0 6px' }}>❌ 缺點</div>
             {PROS_CONS.ins.cons.map((p, i) => (
-              <div key={i} style={{ fontSize: 11, color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
+              <div key={i} style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
                 <span style={{ color: 'var(--c-red)', flexShrink: 0 }}>−</span>{p}
               </div>
             ))}
@@ -67,19 +67,19 @@ function ProsCons() {
         </div>
         {/* 大盤ETF */}
         <div style={{ borderRadius: 'var(--radius)', border: '0.5px solid var(--c-border)', overflow: 'hidden' }}>
-          <div style={{ background: 'var(--c-green)', color: '#fff', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>
+          <div style={{ background: 'var(--c-green)', color: '#fff', padding: '8px 12px', fontSize: 'var(--font-md)', fontWeight: 700 }}>
             📈 大盤指數ETF（009816/0050）
           </div>
           <div style={{ padding: '10px 12px' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-suc)', marginBottom: 6 }}>✅ 優點</div>
+            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-suc)', marginBottom: 6 }}>✅ 優點</div>
             {PROS_CONS.etf.pros.map((p, i) => (
-              <div key={i} style={{ fontSize: 11, color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
+              <div key={i} style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
                 <span style={{ color: 'var(--c-green)', flexShrink: 0 }}>+</span>{p}
               </div>
             ))}
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-red)', margin: '10px 0 6px' }}>❌ 缺點</div>
+            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-red)', margin: '10px 0 6px' }}>❌ 缺點</div>
             {PROS_CONS.etf.cons.map((p, i) => (
-              <div key={i} style={{ fontSize: 11, color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
+              <div key={i} style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text2)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
                 <span style={{ color: 'var(--c-red)', flexShrink: 0 }}>−</span>{p}
               </div>
             ))}

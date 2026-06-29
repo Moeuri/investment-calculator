@@ -25,35 +25,52 @@
   --c-suc: #146c4e;
   --radius: 8px;
   --radius-sm: 5px;
+  /* 間距尺度（4px 基準）*/
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  /* 危險主題（深色模式自適應）*/
+  --c-danger: #C0392B;
+  --c-danger-bg: #fdecea;
+  --c-danger-text: #C0392B;
   /* 字體大小（預設小）*/
+  --font-2xs: 11px;
+  --font-xs:  11px;
+  --font-sm:  12px;
+  --font-md:  13px;
   --font-base: 14px;
-  --font-sm: 12px;
-  --font-xs: 11px;
-  --font-lg: 16px;
-  --font-xl: 18px;
+  --font-lg:  16px;
+  --font-xl:  18px;
 }
 
 /* 字體大小三檔 */
 html[data-font="small"] {
+  --font-2xs: 11px;
+  --font-xs:  11px;
+  --font-sm:  12px;
+  --font-md:  13px;
   --font-base: 14px;
-  --font-sm: 12px;
-  --font-xs: 11px;
-  --font-lg: 16px;
-  --font-xl: 18px;
+  --font-lg:  16px;
+  --font-xl:  18px;
 }
 html[data-font="medium"] {
+  --font-2xs: 11px;
+  --font-xs:  12px;
+  --font-sm:  13px;
+  --font-md:  14px;
   --font-base: 16px;
-  --font-sm: 14px;
-  --font-xs: 12px;
-  --font-lg: 18px;
-  --font-xl: 21px;
+  --font-lg:  18px;
+  --font-xl:  21px;
 }
 html[data-font="large"] {
+  --font-2xs: 12px;
+  --font-xs:  13px;
+  --font-sm:  14px;
+  --font-md:  15px;
   --font-base: 18px;
-  --font-sm: 16px;
-  --font-xs: 13px;
-  --font-lg: 20px;
-  --font-xl: 24px;
+  --font-lg:  20px;
+  --font-xl:  24px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,7 +93,33 @@ html[data-font="large"] {
     --c-info: #7ab3f0;
     --c-suc-bg: #0d2e22;
     --c-suc: #4dc99a;
+    --c-danger-bg: #1a0805;
+    --c-danger-text: #E24B4A;
   }
+}
+
+/* 響應式卡片格線（class 提供欄數，media query 才能覆寫 inline 無法覆寫的問題）*/
+.grid2, .grid3, .grid4, .grid5 { display: grid; }
+.grid2 { grid-template-columns: repeat(2, 1fr); }
+.grid3 { grid-template-columns: repeat(3, 1fr); }
+.grid4 { grid-template-columns: repeat(4, 1fr); }
+.grid5 { grid-template-columns: repeat(5, 1fr); }
+
+/* 0050 vs 009816 比較列 */
+.cmp-row, .cmp-head { display: grid; grid-template-columns: 160px 1fr 1fr; }
+
+@media (max-width: 560px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .grid3, .grid4 { grid-template-columns: repeat(2, 1fr); }
+  .grid5 { grid-template-columns: repeat(3, 1fr); }
+  .cmp-row, .cmp-head { grid-template-columns: 1fr; }
+  .cmp-head > :first-child { display: none; }
+}
+
+/* 鍵盤可視焦點 */
+button:focus-visible, input:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--c-blue);
+  outline-offset: 1px;
 }
 
 body {

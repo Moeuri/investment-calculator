@@ -2,8 +2,11 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
+  PieChart, Pie, Cell, BarChart, Bar, LabelList,
 } from 'recharts'
 import { fmtM } from './utils'
+
+const TOOLTIP_STYLE = { fontSize: 'var(--font-sm)', borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }
 
 // ── 卡片 ──────────────────────────────────────────
 export function Card({ label, value, sub, accent }) {
@@ -96,6 +99,7 @@ export function Slider({ label, min, max, step, value, onChange, fmt }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
       <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>{label}</span>
       <input type="range" min={min} max={max} step={step} value={value}
+        aria-label={typeof label === 'string' ? label : undefined}
         onChange={e => onChange(Number(e.target.value))} style={{ flex: 1 }} />
       <EditableVal value={value} min={min} max={max} step={step} fmt={fmt} onChange={onChange} />
     </div>
@@ -202,6 +206,52 @@ export function InvestChart({ data, series, height = 220, refLines = [], xKey = 
             dot={false} activeDot={{ r: 4 }} />
         ))}
       </LineChart>
+    </ResponsiveContainer>
+  )
+}
+
+// ── 甜甜圈圖（含底部圖例） ────────────────────────
+//   data: [{ name, value, color }]
+export function MiniPie({ data, height = 170, unit = '%' }) {
+  return (
+    <div>
+      <ResponsiveContainer width="100%" height={height}>
+        <PieChart>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%"
+            innerRadius="46%" outerRadius="80%" stroke="var(--c-bg)" strokeWidth={1.5}>
+            {data.map((d, i) => <Cell key={i} fill={d.color} />)}
+          </Pie>
+          <Tooltip formatter={(v, n) => [`${v}${unit}`, n]} contentStyle={TOOLTIP_STYLE} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginTop: 6, fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>
+        {data.map((d, i) => (
+          <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: d.color, display: 'inline-block' }} />
+            {d.name} {d.value}{unit}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── 直條圖 ────────────────────────────────────────
+//   data: [{ name, value, color? }]
+export function MiniBar({ data, height = 190, unit = '', color = 'var(--c-blue)' }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} margin={{ top: 18, right: 8, bottom: 4, left: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} />
+        <YAxis tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={40} />
+        <Tooltip formatter={(v, n) => [`${v}${unit}`, n]} cursor={{ fill: 'rgba(128,128,128,0.08)' }} contentStyle={TOOLTIP_STYLE} />
+        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+          {data.map((d, i) => <Cell key={i} fill={d.color || color} />)}
+          <LabelList dataKey="value" position="top" formatter={v => `${v}${unit}`}
+            style={{ fontSize: 'var(--font-2xs)', fill: 'var(--c-text2)' }} />
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   )
 }

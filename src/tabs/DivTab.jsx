@@ -1,5 +1,5 @@
 ﻿import { useMemo } from 'react'
-import { Card, Note, Slider, SectionTitle, Divider } from '../components'
+import { Card, Note, Slider, SectionTitle, Divider, MiniPie, MiniBar } from '../components'
 import { fmtM, fmtPA, ETF_DATA, MONTH_NAMES, TH } from '../utils'
 
 const TAX_OPTS = [
@@ -23,7 +23,7 @@ function DivCalendar({ weights, total }) {
   const yields = ETF_DATA.map(e => e.yield10yr)
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, margin: '10px 0' }}>
+    <div className="grid4" style={{ gap: 6, margin: '10px 0' }}>
       {MONTH_NAMES.map((mo, idx) => {
         const month  = idx + 1
         const etfIdx = ETF_DATA.findIndex(e => e.divMonths.includes(month))
@@ -79,6 +79,16 @@ export default function DivTab({ state, set }) {
     return a === dvW[0] && b === dvW[1] && c === dvW[2]
   })?.v || 'custom'
 
+  // 圖表資料：目前配置佔比、各預設加權殖利率
+  const pieData = ETF_DATA.map((e, i) => ({ name: e.code, value: Math.round(wNorm[i] * 100), color: e.color }))
+  const PRESET_SHORT = ['月領均衡', '總領最大', '波動最低']
+  const presetBars = RATIO_PRESETS.map((p, idx) => {
+    const w = p.v.split(',').map(Number)
+    const s = w.reduce((a, b) => a + b, 0)
+    const y = ETF_DATA.reduce((acc, e, i) => acc + (w[i] / s) * e.yield10yr, 0) * 100
+    return { name: PRESET_SHORT[idx], value: Math.round(y * 100) / 100, color: 'var(--c-orange)' }
+  })
+
   return (
     <div>
       <SectionTitle>高股息ETF配置試算</SectionTitle>
@@ -128,7 +138,7 @@ export default function DivTab({ state, set }) {
       ))}
 
       {/* 三檔個別卡片 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
+      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
         {ETF_DATA.map((etf, i) => (
           <div key={etf.code} style={{
             borderRadius: 'var(--radius)', padding: '10px 12px',
@@ -155,11 +165,22 @@ export default function DivTab({ state, set }) {
       </div>
 
       {/* 總計 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 7, margin: '10px 0' }}>
+      <div className="grid4" style={{ gap: 7, margin: '10px 0' }}>
         <Card label="加權平均殖利率" value={fmtPA(dvAvgYield)} />
         <Card label="年總配息（稅前）" value={fmtM(dvYrTotal) + '/年'} />
         <Card label="每季配息（平均）" value={fmtM(dvYrTotal/4) + '/季'} />
         <Card label="月均等效" value={fmtM(dvYrTotal/12) + '/月'} />
+      </div>
+
+      <div className="grid2" style={{ gap: 12, margin: '10px 0' }}>
+        <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+          <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 4 }}>目前配置佔比</div>
+          <MiniPie data={pieData} unit="%" height={160} />
+        </div>
+        <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+          <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 4 }}>三種預設加權殖利率</div>
+          <MiniBar data={presetBars} unit="%" height={160} />
+        </div>
       </div>
 
       <Divider />
@@ -181,7 +202,7 @@ export default function DivTab({ state, set }) {
           })}
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
+      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
         <Card label="稅前月均配息" value={fmtM(dvMonthGross) + '/月'} sub="年配息 ÷ 12" />
         <Card label="二代健保補充費" value={`-${fmtM(dvMonthGross * TH)}/月`} sub={`費率 ${(TH*100).toFixed(2)}%（固定）`} accent="var(--c-orange)" />
         <Card label="稅後月均淨領" value={fmtM(dvMonthNet) + '/月'}
@@ -202,7 +223,7 @@ export default function DivTab({ state, set }) {
         value={dvTarget} onChange={v => set('dvTarget', v)}
         fmt={v => v.toLocaleString() + ' 元'} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
+      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
         <Card label="需要投入總金額" value={fmtM(dvNeed)} sub="以加權殖利率反推" />
         <Card label={`vs 現有 ${fmtM(dvTotal)}`}
           value={dvDiff > 0 ? `尚缺 ${fmtM(dvDiff)}` : `超過 ${fmtM(-dvDiff)}`}

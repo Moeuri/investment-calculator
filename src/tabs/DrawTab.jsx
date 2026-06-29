@@ -11,17 +11,6 @@ function calcRetirementPV(monthlyDraw, drawRate, years) {
   return monthlyDraw * (1 - Math.pow(1 + mr, -n)) / mr
 }
 
-function buildWithLumpSum(lumpSum, amt, per, annR, months = 240) {
-  const mr = annR / 12
-  const out = new Float64Array(months + 1)
-  let v = lumpSum || 0
-  for (let mo = 1; mo <= months; mo++) {
-    v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
-    out[mo] = v
-  }
-  return out
-}
-
 export default function DrawTab({ state, set }) {
   const { amt, per, dr, lumpSum, drawMo, drawRate, retireAfter, drawYears, infl } = state
   const r1 = dr + 0.01 - EXP1
@@ -37,7 +26,7 @@ export default function DrawTab({ state, set }) {
 
   // 退休時的帳上資產（陣列延伸至最大退休月份，修正 >20年時取到 undefined 的 Bug）
   const maxMo   = Math.max(240, retireEndMo)
-  const norm    = useMemo(() => buildWithLumpSum(ls, amt, per, r1, maxMo), [ls, amt, per, r1, maxMo])
+  const norm    = useMemo(() => buildNorm(ls, amt, per, r1, maxMo), [ls, amt, per, r1, maxMo])
   const startV  = norm[retireEndMo]
 
   // 提領模擬
@@ -98,7 +87,7 @@ export default function DrawTab({ state, set }) {
         value={drawRate * 100} onChange={v => set('drawRate', v / 100)}
         fmt={v => v.toFixed(1) + '%'} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
+      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
         <Card label="退休時總資產" value={fmtM(startV)} sub={`第${retireAfter || 20}年退休`} />
         <Card label="每年提領" value={fmtM(annualDraw)} sub={`佔起始資產 ${fmtPA(drawPct)}`} />
         <Card label="資產耗盡年數"
@@ -110,7 +99,8 @@ export default function DrawTab({ state, set }) {
       <InvestChart data={chartData} series={[
         { key: '資產', label: '提領後資產', color: '#1D9E75', width: 2.5 },
         { key: '零線', label: '歸零線',     color: '#E24B4A', dash: '4 3', width: 1.5 },
-      ]} height={210} />
+      ]} height={210}
+        refLines={drawExhaust ? [{ x: `${drawExhaust}年`, label: '資產耗盡', color: 'var(--c-red)' }] : []} />
       <Legend items={[
         { color: '#1D9E75', label: '提領後資產' },
         { color: '#E24B4A', label: '歸零線', dash: true },

@@ -35,8 +35,9 @@ investment-calc/
     ├── main.jsx
     ├── App.jsx             ← 主框架：Tab bar、全域狀態、字體切換
     ├── index.css           ← CSS 變數（含三檔字體大小）
-    ├── components.jsx      ← 共用元件
-    ├── utils.js            ← 核心計算函數
+    ├── components.jsx      ← 共用元件（含 MiniPie / MiniBar 圖表）
+    ├── config.js           ← 集中常數（費率、ETF、崩盤事件）v2.0 新增
+    ├── utils.js            ← 核心計算函數（re-export config 常數）
     └── tabs/
         ├── DCATab.jsx      ← 定期定額
         ├── BuyCalcTab.jsx  ← 買入試算（純無狀態輔助計算）
@@ -104,7 +105,9 @@ investment-calc/
 
 ---
 
-## 核心常數（utils.js）
+## 核心常數（src/config.js）
+
+> v2.0 起，以下市場假設/費率集中於 `src/config.js`（單一事實來源）。`utils.js` re-export 維持既有 import 路徑不變，分頁仍可 `from '../utils'` 取用。需更新數字時只改 `config.js`。
 
 ```js
 EXP0 = 0.0043   // 0050 費用率
@@ -112,6 +115,9 @@ EXP1 = 0.00097  // 009816 費用率
 DIV  = 0.027    // 0050 配息殖利率假設
 TH   = 0.0211   // 二代健保補充費率
 MONTH_VOL = 0.18 // 台股年化波動率（扇形計算用）
+SAFE_WITHDRAWAL_RATE = 0.04  // 4% 法則
+COMPARE_DATE = '2026/6/24'   // 比較資料基準日
+// ETF_DATA / CRASH_EVENTS 亦在 config.js
 ```
 
 ### 報酬率計算
@@ -231,11 +237,26 @@ crashes 格式：`[{ when(年), drop(%), type('structural'|'liquidity'), enabled
 
 ---
 
+## v2.0 改進方案（2026-06-29 完成）
+
+依「計算正確性 → 重構 → UI/UX → 圖表」四階段一次性實作，已發版 v2.0：
+
+- **計算正確性（最高優先）**
+  - 移除 `buildCrashN` 內約 140 行死碼（原本就由 `buildCrashClean` 產生結果，輸出不變）
+  - 同月多次崩盤改為合成跌幅 `1-∏(1-dropᵢ)`，修正 `crashIdx` 卡死、後續崩盤不觸發的 bug
+  - `buildNorm` / `buildCrashClean` 補 `out[0] = 本金`；`buildNorm` 新增 `months` 參數
+  - `calcFan` 加入 `fanStartMo` 邊界與非有限值防呆
+  - 註解修正：`algoAmonthly` 標明為「線性恢復」（非半衰期）；`buildNorm` 標明「月初投入」假設
+- **重構**：新增 `src/config.js` 集中常數，`utils.js` re-export；合併 DCA/Infl/Draw 重複的複利函數為 `buildNorm`；CrashTab 跌幅/年份滑桿改用共用 `Slider`
+- **UI/UX**：`index.css` 新增 `.grid2/3/4/5`、`.cmp-row/.cmp-head` 響應式 class（≤560px 重排），Header `flexWrap`，`:focus-visible`，`--font-2xs` 提至 11px，`Slider` 加 `aria-label`，Crash/Draw/BuyCalc 輸入防呆
+- **深色模式**：CrashTab 寫死深色塊改用 `--c-danger*` / `--c-suc*` 變數
+- **新圖表**：`MiniPie` / `MiniBar`（components.jsx）；CompareTab 集中度+費用率長條、DivTab 配置圓餅+預設殖利率長條、BuyCalcTab 預算分配條、Draw/Ins 用 `InvestChart` refLines 標註耗盡點/黃金交叉
+
 ## 已知待辦 / 未來方向
 
-- 崩盤演算法可能仍有小問題，以 v1.8.x 小版本持續修正
+- 崩盤演算法可選將 `algoAmonthly` 線性恢復改為指數恢復（會改變所有崩盤數字，屬模型決策，暫不動）
 - 報酬率六檔的歷史錨點數字，若有更精確的資料來源可更新
-- 高股息ETF殖利率採10年歷史均值，2026/6/24為最後更新基準日
+- 高股息ETF殖利率採10年歷史均值，COMPARE_DATE（config.js）為最後更新基準日
 
 ---
 

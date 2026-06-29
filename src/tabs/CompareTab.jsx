@@ -1,4 +1,5 @@
-﻿import { Divider, Note } from '../components'
+﻿import { Divider, Note, MiniBar } from '../components'
+import { COMPARE_DATE } from '../utils'
 
 const SECTION = ({ title, children }) => (
   <div style={{ marginBottom: 20 }}>
@@ -11,8 +12,7 @@ const SECTION = ({ title, children }) => (
 )
 
 const Row = ({ label, v0050, v9816, highlight }) => (
-  <div style={{
-    display: 'grid', gridTemplateColumns: '160px 1fr 1fr',
+  <div className="cmp-row" style={{
     gap: 8, marginBottom: 7,
     background: highlight ? 'var(--c-bg2)' : 'transparent',
     borderRadius: 6, padding: highlight ? '8px 10px' : '2px 0',
@@ -43,15 +43,30 @@ export default function CompareTab() {
         <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text2)', lineHeight: 1.6 }}>
           兩檔都追蹤台灣市值前50大企業，成分股重疊度高達90%以上，
           但選股邏輯、持股限制、配息機制與費用結構的差異，
-          長期下來會讓報酬走出不同的路。資料更新至2026/6/24。
+          長期下來會讓報酬走出不同的路。資料更新至{COMPARE_DATE}。
+        </div>
+      </div>
+
+      {/* 關鍵差異視覺化 */}
+      <div className="grid2" style={{ gap: 12, marginBottom: 16 }}>
+        <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+          <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 4 }}>台積電持股佔比</div>
+          <MiniBar height={160} unit="%" data={[
+            { name: '0050', value: 63, color: 'var(--c-blue)' },
+            { name: '009816', value: 43, color: 'var(--c-green)' },
+          ]} />
+        </div>
+        <div style={{ background: 'var(--c-bg2)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+          <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--c-text)', marginBottom: 4 }}>總費用率（估算）</div>
+          <MiniBar height={160} unit="%" data={[
+            { name: '0050', value: 0.43, color: 'var(--c-blue)' },
+            { name: '009816', value: 0.097, color: 'var(--c-green)' },
+          ]} />
         </div>
       </div>
 
       {/* 表頭 */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '160px 1fr 1fr',
-        gap: 8, marginBottom: 10,
-      }}>
+      <div className="cmp-head" style={{ gap: 8, marginBottom: 10 }}>
         <div />
         <div style={{
           background: 'var(--c-blue)', color: '#fff',
@@ -177,7 +192,7 @@ export default function CompareTab() {
 
       <Note type="warn" mt={8}>
         ⚠️ 009816上市不到1年，動能策略在熊市或盤整市場的表現仍有待時間驗證。
-        所有比較數據以2026/6/24為基準，費用率與持股結構會隨時更新，請定期複查各投信官網。
+        所有比較數據以{COMPARE_DATE}為基準，費用率與持股結構會隨時更新，請定期複查各投信官網。
         本頁資訊僅供參考，不構成投資建議。
       </Note>
     </div>

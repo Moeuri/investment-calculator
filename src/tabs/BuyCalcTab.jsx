@@ -48,6 +48,7 @@ export default function BuyCalcTab() {
   const b = Number(budget) || 0
   const p = Number(price)  || 0
   const valid = b > 0 && p > 0
+  const hasError = (budget !== '' && !(Number(budget) > 0)) || (price !== '' && !(Number(price) > 0))
 
   // 計算
   let lots = 0, lotAmt = 0, oddShares = 0, oddAmt = 0, used = 0, remain = 0, fee = 0, totalCost = 0, usedPct = 0
@@ -98,6 +99,9 @@ export default function BuyCalcTab() {
             目前股價的跳動級距為 {getTickSize(price)} 元；整張＝1,000 股，整張單價 {(p * 1000).toLocaleString()} 元。
           </div>
         )}
+        {hasError && (
+          <Note type="red" mt={4}>⚠️ 預算與股價必須為大於 0 的數字，請重新輸入。</Note>
+        )}
       </div>
 
       {valid ? (
@@ -114,6 +118,21 @@ export default function BuyCalcTab() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8, marginBottom: 12 }}>
             <Card label="合計買進股數" value={`${totalShares.toLocaleString()} 股`} sub={`${lots} 張 ${oddShares} 股`} />
             <Card label="預算使用率" value={`${usedPct.toFixed(1)}%`} sub={`剩餘 ${remain.toLocaleString()} 元未用`} />
+          </div>
+
+          {/* 預算分配堆疊條 */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 'var(--font-sm)', color: 'var(--c-text2)', marginBottom: 5 }}>預算分配</div>
+            <div style={{ display: 'flex', height: 24, borderRadius: 'var(--radius)', overflow: 'hidden', fontSize: 'var(--font-2xs)', fontWeight: 600 }}>
+              <div style={{ flex: used, background: 'var(--c-blue-bg)', color: 'var(--c-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0, overflow: 'hidden' }}>股票</div>
+              {fee > 0 && <div style={{ flex: Math.max(fee, b * 0.02), background: 'var(--c-red-bg)', color: 'var(--c-red)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0, overflow: 'hidden' }}>費</div>}
+              {remain > 0 && <div style={{ flex: remain, background: 'var(--c-bg3)', color: 'var(--c-text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0, overflow: 'hidden' }}>剩餘</div>}
+            </div>
+            <div style={{ display: 'flex', gap: 14, marginTop: 6, fontSize: 'var(--font-xs)', color: 'var(--c-text3)', flexWrap: 'wrap' }}>
+              <span>🟦 股票花費 {used.toLocaleString()} 元</span>
+              <span>🟥 手續費 {fee.toLocaleString()} 元</span>
+              <span>⬜ 剩餘 {remain.toLocaleString()} 元</span>
+            </div>
           </div>
 
           {/* 費用明細 */}

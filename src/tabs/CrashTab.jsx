@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo } from 'react'
-import { Card, Note, SectionTitle, SubTab, Divider } from '../components'
+import { Card, Note, SectionTitle, SubTab, Divider, Slider } from '../components'
 import { buildNorm, buildCrashN, calcFan, fmtM, CRASH_EVENTS, EXP1, MONTH_VOL } from '../utils'
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -32,38 +32,12 @@ function TypeBtn({ value, onChange }) {
   )
 }
 
-// ── 跌幅滑桿（可點擊輸入） ────────────────────────────────────────
-function DropSlider({ value, onChange }) {
-  const [editing, setEditing] = useState(false)
-  const [raw, setRaw] = useState('')
-  function commit() {
-    const n = parseFloat(raw)
-    if (!isNaN(n)) onChange(Math.min(99, Math.max(0, Math.round(n))))
-    setEditing(false)
-  }
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-      <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>最大跌幅</span>
-      <input type="range" min={0} max={99} step={1} value={value}
-        onChange={e => onChange(Number(e.target.value))} style={{ flex: 1 }} />
-      {editing
-        ? <input autoFocus value={raw} onChange={e => setRaw(e.target.value)}
-            onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-            style={{ width: 80, fontSize: 'var(--font-md)', fontWeight: 600, textAlign: 'right', border: '1.5px solid var(--c-blue)', borderRadius: 4, padding: '2px 6px', background: 'var(--c-bg)', color: 'var(--c-text)', outline: 'none' }} />
-        : <span onClick={() => { setRaw(String(value)); setEditing(true) }}
-            style={{ fontSize: 'var(--font-md)', fontWeight: 600, minWidth: 80, textAlign: 'right', cursor: 'text', borderBottom: '1px dashed var(--c-border2)', paddingBottom: 1 }}>
-            {value === 0 ? '0%（無崩跌）' : `-${value}%`}
-          </span>}
-    </div>
-  )
-}
-
 const DEFAULT_CRASH = (when, evtIdx) => ({
   when, drop: CRASH_EVENTS[evtIdx].drop, type: CRASH_EVENTS[evtIdx].type, evtIdx, enabled: true,
 })
 
 // ── 崩盤參數面板 ──────────────────────────────────────────────────
-function CrashParamPanel({ c, setC, label }) {
+function CrashParamPanel({ c, setC, label, minWhen = 1 }) {
   function applyEvent(i) {
     setC({ ...c, drop: CRASH_EVENTS[i].drop, type: CRASH_EVENTS[i].type, evtIdx: i })
   }
@@ -79,7 +53,7 @@ function CrashParamPanel({ c, setC, label }) {
       </label>
       {c.enabled && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, marginBottom: 10 }}>
+          <div className="grid5" style={{ gap: 5, marginBottom: 10 }}>
             {CRASH_EVENTS.map((ev, i) => (
               <button key={i} onClick={() => applyEvent(i)} style={{
                 padding: '6px 3px', borderRadius: 'var(--radius-sm)', textAlign: 'center',
@@ -99,13 +73,12 @@ function CrashParamPanel({ c, setC, label }) {
             <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', marginBottom: 8 }}>崩盤性質</div>
             <TypeBtn value={c.type} onChange={v => setC({ ...c, type: v, evtIdx: null })} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <span style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', minWidth: 148, flexShrink: 0 }}>崩盤發生（第幾年）</span>
-            <input type="range" min={1} max={19} step={1} value={c.when}
-              onChange={e => setC({ ...c, when: Number(e.target.value) })} style={{ flex: 1 }} />
-            <span style={{ fontSize: 'var(--font-md)', fontWeight: 600, minWidth: 80, textAlign: 'right' }}>第 {c.when} 年</span>
-          </div>
-          <DropSlider value={c.drop} onChange={v => setC({ ...c, drop: v, evtIdx: null })} />
+          <Slider label="崩盤發生（第幾年）" min={minWhen} max={19} step={1} value={Math.max(c.when, minWhen)}
+            onChange={v => setC({ ...c, when: Math.max(minWhen, v) })}
+            fmt={v => `第 ${v} 年`} />
+          <Slider label="最大跌幅" min={0} max={99} step={1} value={c.drop}
+            onChange={v => setC({ ...c, drop: v, evtIdx: null })}
+            fmt={v => v === 0 ? '0%（無崩跌）' : `-${v}%`} />
         </>
       )}
     </div>
@@ -120,8 +93,8 @@ function ExtremeSection() {
       <button onClick={() => setOpen(v => !v)} style={{
         width: '100%', textAlign: 'left', padding: '10px 14px',
         borderRadius: open ? 'var(--radius) var(--radius) 0 0' : 'var(--radius)',
-        cursor: 'pointer', border: '1px solid #C0392B',
-        background: open ? '#1a0805' : 'transparent', color: '#E24B4A',
+        cursor: 'pointer', border: '1px solid var(--c-danger)',
+        background: open ? 'var(--c-danger-bg)' : 'transparent', color: 'var(--c-danger-text)',
         fontSize: 'var(--font-md)', fontWeight: 600,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
@@ -130,7 +103,7 @@ function ExtremeSection() {
       </button>
       {open && (
         <div style={{
-          border: '1px solid #C0392B', borderTop: 'none',
+          border: '1px solid var(--c-danger)', borderTop: 'none',
           borderRadius: '0 0 var(--radius) var(--radius)',
           padding: '14px 16px', fontSize: 'var(--font-sm)', lineHeight: 1.8,
           background: 'var(--c-bg2)',
@@ -164,7 +137,7 @@ function ExtremeSection() {
             <div style={{ color: 'var(--c-text3)', fontSize: 'var(--font-xs)', padding: '6px 10px', background: 'var(--c-bg3)', borderRadius: 4 }}>
               代表意義：2020年是「現代央行工具箱在最有利條件下的最佳表現」，說明了為什麼歷史上實際走勢往往比保守模型更樂觀。
             </div>
-            <div style={{ marginTop: 8, padding: '7px 10px', background: '#1a2e1a', border: '1px solid #2d5a2d', borderRadius: 4, fontSize: 'var(--font-xs)', color: '#7ec87e', lineHeight: 1.6 }}>
+            <div style={{ marginTop: 8, padding: '7px 10px', background: 'var(--c-suc-bg)', border: '1px solid var(--c-suc)', borderRadius: 4, fontSize: 'var(--font-xs)', color: 'var(--c-suc)', lineHeight: 1.6 }}>
               ⚠️ 模型套用提醒：本計算器歷史事件選單包含「2020疫情崩盤」，但套用後的中央預測與分布範圍<strong>無法反映4個月閃回這個現實</strong>。若選用此事件，後續扇形分布區間將嚴重低估上行可能性，請理解為「如果這次崩跌沒有史無前例的政策介入會怎樣」的壓力測試，而非對2020年實際情況的模擬。
             </div>
           </div>
@@ -219,6 +192,10 @@ export default function CrashTab({ state }) {
   const c2Invalid = c2.enabled && c1.enabled && c2.when <= c1.when
   const c3Invalid = c3.enabled && ((c1.enabled && c3.when <= c1.when) || (c2.enabled && c3.when <= c2.when))
 
+  // 各崩盤的最小可選年份（須晚於前面已啟用的崩盤），與 utils 的同月合併互為防呆
+  const c2Min = Math.min(19, c1.enabled ? c1.when + 1 : 1)
+  const c3Min = Math.min(19, Math.max(c1.enabled ? c1.when + 1 : 1, c2.enabled ? c2.when + 1 : 1))
+
   const { chartData, summaryCards } = useMemo(() => {
     const norm = buildNorm(ls, amt, per, r1)
     const cost = ls + amt * per
@@ -262,7 +239,7 @@ export default function CrashTab({ state }) {
   return (
     <div>
       {/* 頂部紅色警告 */}
-      <div style={{ background: '#C0392B', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: 12 }}>
+      <div style={{ background: 'var(--c-danger)', color: '#fff', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: 12 }}>
         <div style={{ fontSize: 'var(--font-base)', fontWeight: 700, marginBottom: 6 }}>⚠️ 此模擬不是走勢預測，請先閱讀</div>
         <div style={{ fontSize: 'var(--font-sm)', lineHeight: 1.7 }}>
           本頁面的唯一目的是幫助你評估：如果發生某種崩盤情境，你的資產會變成什麼樣子，以及你是否能在心理和財務上承受這個過程而不提前出場。
@@ -291,15 +268,15 @@ export default function CrashTab({ state }) {
       />
 
       <div style={{ marginBottom: 12 }}>
-        {subTab === 'c1' && <CrashParamPanel c={c1} setC={setC1} label="崩盤一次" />}
-        {subTab === 'c2' && <CrashParamPanel c={c2} setC={setC2} label="崩盤兩次" />}
-        {subTab === 'c3' && <CrashParamPanel c={c3} setC={setC3} label="崩盤三次" />}
+        {subTab === 'c1' && <CrashParamPanel c={c1} setC={setC1} label="崩盤一次" minWhen={1} />}
+        {subTab === 'c2' && <CrashParamPanel c={c2} setC={setC2} label="崩盤兩次" minWhen={c2Min} />}
+        {subTab === 'c3' && <CrashParamPanel c={c3} setC={setC3} label="崩盤三次" minWhen={c3Min} />}
       </div>
 
       <Divider />
 
       {/* 摘要卡片 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 12 }}>
+      <div className="grid3" style={{ gap: 8, marginBottom: 12 }}>
         <Card label="正常複利20年（無崩盤）" value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
         <Card label="最後崩盤當下底部資產"
           value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}

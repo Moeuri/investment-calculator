@@ -154,7 +154,8 @@ export default function InsTab({ state, set }) {
           <InvestChart data={chartData} series={[
             { key: '儲蓄險總資產', label: '儲蓄險總資產', color: '#BA7517', width: 2   },
             { key: '009816',      label: '009816',      color: '#1D9E75', width: 2.5 },
-          ]} height={220} />
+          ]} height={220}
+            refLines={insCross ? [{ x: `${insCross}年`, label: '黃金交叉', color: 'var(--c-green)' }] : []} />
           <Legend items={[
             { color: '#BA7517', label: '儲蓄險總資產' },
             { color: '#1D9E75', label: '解約轉 009816' },

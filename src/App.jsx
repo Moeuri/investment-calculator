@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+﻿import { useState, useCallback, useEffect, useRef } from 'react'
 import DCATab      from './tabs/DCATab'
 import CompareTab  from './tabs/CompareTab'
 import CrashTab    from './tabs/CrashTab'
@@ -99,17 +99,18 @@ export default function App() {
       <div style={{
         padding: '16px 0 12px', borderBottom: '0.5px solid var(--c-border)',
         marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 10,
       }}>
         <div>
           <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v1.8.2 · Huang Yen-han</div>
+          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v2.0 · Huang Yen-han</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 10, color: 'var(--c-text3)', marginRight: 4 }}>字體</span>
+            <span style={{ fontSize: 'var(--font-2xs)', color: 'var(--c-text3)', marginRight: 4 }}>字體</span>
             {FONT_SIZES.map(f => (
               <button key={f.v} onClick={() => setFontSize(f.v)} style={{
-                padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+                padding: '2px 8px', borderRadius: 4, fontSize: 'var(--font-xs)', cursor: 'pointer',
                 border: `0.5px solid ${fontSize === f.v ? 'var(--c-green)' : 'var(--c-border2)'}`,
                 background: fontSize === f.v ? 'var(--c-green-bg)' : 'var(--c-bg)',
                 color: fontSize === f.v ? 'var(--c-green)' : 'var(--c-text3)',
@@ -119,12 +120,12 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={handleReset} style={{
-              padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+              padding: '2px 8px', borderRadius: 4, fontSize: 'var(--font-xs)', cursor: 'pointer',
               border: '0.5px solid var(--c-border2)', background: 'var(--c-bg)',
               color: 'var(--c-text3)',
             }}>重設</button>
             <button onClick={handleShare} style={{
-              padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+              padding: '2px 8px', borderRadius: 4, fontSize: 'var(--font-xs)', cursor: 'pointer',
               border: `0.5px solid ${shareCopied ? 'var(--c-green)' : 'var(--c-border2)'}`,
               background: shareCopied ? 'var(--c-green-bg)' : 'var(--c-bg)',
               color: shareCopied ? 'var(--c-green)' : 'var(--c-text3)',

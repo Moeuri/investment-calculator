@@ -9,24 +9,13 @@ const INFL_OPTS = [
   { v: 0.05,  label: '高通膨 5%'   },
 ]
 
-function buildWithLumpSum(lumpSum, amt, per, annR) {
-  const mr = annR / 12
-  const out = new Float64Array(241)
-  let v = lumpSum || 0
-  for (let mo = 1; mo <= 240; mo++) {
-    v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
-    out[mo] = v
-  }
-  return out
-}
-
 export default function InflTab({ state, set }) {
   const { amt, per, dr, lumpSum, infl, insAnn } = state
   const r1 = dr + 0.01 - EXP1
   const ls = lumpSum || 0
 
   const { norm, chartData, insRealTotal } = useMemo(() => {
-    const norm = buildWithLumpSum(ls, amt, per, r1)
+    const norm = buildNorm(ls, amt, per, r1)
     let insRealTotal = 0
     const data = Array.from({ length: 20 }, (_, i) => {
       const y = i + 1
@@ -58,7 +47,7 @@ export default function InflTab({ state, set }) {
         <span style={{ fontSize: 'var(--font-md)', fontWeight: 600, minWidth: 60, textAlign: 'right' }}>{(infl*100).toFixed(1)}%</span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 7, margin: '10px 0' }}>
+      <div className="grid4" style={{ gap: 7, margin: '10px 0' }}>
         {[5, 10, 15, 20].map(y => (
           <Card key={y} label={`${y}年後`}
             value={fmtM(norm[y * 12])}
@@ -72,7 +61,7 @@ export default function InflTab({ state, set }) {
         {insAnn === 150000 && <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', fontWeight: 400, marginLeft: 6 }}>（可在「儲蓄險 vs 股市」分頁調整）</span>}
       </SectionTitle>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
+      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
         <Card label={`第10年的${fmtM(insAnn)}等同今日`}
           value={fmtM(insAnn / Math.pow(1 + infl, 10))} sub="購買力縮水" />
         <Card label={`第20年的${fmtM(insAnn)}等同今日`}

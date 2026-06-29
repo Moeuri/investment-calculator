@@ -1,6 +1,6 @@
 ﻿import { useMemo } from 'react'
 import { Card, Note, Slider, PhaseBar, SectionTitle, InvestChart, Legend, Divider } from '../components'
-import { fmtM, fmtPA, EXP0, EXP1, DIV, TH } from '../utils'
+import { buildNorm, fmtM, fmtPA, EXP0, EXP1, DIV, TH } from '../utils'
 
 const TAX_OPTS = [
   { v: 0,    label: '免稅' },
@@ -19,17 +19,6 @@ const DR_PRESETS = [
   { v: 0.13,  label: '樂觀 13%',       tag: '台股突破前高後多頭',   note: '錨點：0050從2016年突破1990年前高後至2024年底，含息年化約13–14%。代表台灣科技業在全球供應鏈重組後持續受惠、AI應用加速滲透的樂觀延續情境，已比2020–2024實際數字保守下修。' },
   { v: 0.18,  label: '賭性狂徒 18%',   tag: '2020疫情低點後AI行情', note: '錨點：0050從2020年3月疫情低點至2024年底，含息年化約18–22%。疫情後流動性寬鬆、AI題材爆發、台積電全球定價權確立三重因素疊加的歷史最強多頭區段。幾乎不可能長期持續，僅供極端樂觀壓力測試。' },
 ]
-
-function buildWithLumpSum(lumpSum, amt, per, annR) {
-  const mr = annR / 12
-  const out = new Float64Array(241)
-  let v = lumpSum || 0
-  for (let mo = 1; mo <= 240; mo++) {
-    v = mo <= per ? (v + amt) * (1 + mr) : v * (1 + mr)
-    out[mo] = v
-  }
-  return out
-}
 
 // 0050 配息現金流累積（不再投入）
 function build0050CashFlow(lumpSum, amt, per, annR, reinvestRate) {
@@ -70,7 +59,7 @@ export default function DCATab({ state, set }) {
   const activePreset = DR_PRESETS.find(p => p.v === dr)
 
   const { norm9816, norm0050, cash0050 } = useMemo(() => {
-    const norm9816 = buildWithLumpSum(ls, amt, per, r1)
+    const norm9816 = buildNorm(ls, amt, per, r1)
     const { asset: norm0050, cash: cash0050 } = build0050CashFlow(ls, amt, per, r0t, rr)
     return { norm9816, norm0050, cash0050 }
   }, [ls, amt, per, r1, r0t, rr])
@@ -136,7 +125,7 @@ export default function DCATab({ state, set }) {
       {/* 報酬率六檔 */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', marginBottom: 8 }}>年化報酬率情境</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+        <div className="grid3" style={{ gap: 6 }}>
           {DR_PRESETS.map(p => {
             const on = dr === p.v
             return (
@@ -183,7 +172,7 @@ export default function DCATab({ state, set }) {
 
       {amt > 0 && <PhaseBar per={per} />}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '10px 0' }}>
+      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
         <Card label="總投入" value={fmtM(cost)} sub={amt > 0 ? perLabel : '一次性'} />
         <Card label="0050（帳面+已領配息，20年）"
           value={fmtM(total0050)}

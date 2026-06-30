@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo } from 'react'
-import { Card, Note, SectionTitle, SubTab, Divider, Slider } from '../components'
+import { Card, Note, SectionTitle, SubTab, Divider, Slider, InvestChart, Legend } from '../components'
 import { buildNorm, buildCrashN, calcFan, fmtM, toReal, CRASH_EVENTS, EXP1, MONTH_VOL } from '../utils'
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -190,7 +190,8 @@ export default function CrashTab({ state }) {
   const r1 = dr + 0.01 - EXP1
   const ls = lumpSum || 0
 
-  const [realMode, setRealMode] = useState(false)  // 實質購買力（扣通膨）切換
+  const [realMode, setRealMode] = useState(false)     // 實質購買力（扣通膨）切換
+  const [compareMode, setCompareMode] = useState(false) // 一次性 vs 定期定額 對比
   const [subTab, setSubTab] = useState('c1')
   const [c1, setC1] = useState(DEFAULT_CRASH(3,  2))
   const [c2, setC2] = useState({ ...DEFAULT_CRASH(8,  3), enabled: false })
@@ -203,7 +204,7 @@ export default function CrashTab({ state }) {
   const c2Min = Math.min(maxWhen, c1.enabled ? c1.when + 1 : 1)
   const c3Min = Math.min(maxWhen, Math.max(c1.enabled ? c1.when + 1 : 1, c2.enabled ? c2.when + 1 : 1))
 
-  const { chartData, summaryCards } = useMemo(() => {
+  const { chartData, summaryCards, compareData, compareCards } = useMemo(() => {
     const norm = buildNorm(ls, amt, per, r1, months)
     const cost = ls + amt * per
     const crashes = [c1, c2, c3]
@@ -241,9 +242,38 @@ export default function CrashTab({ state }) {
     const finalUpper  = real(upper[months], years)
     const finalLower  = real(lower[months], years)
 
+    // ── 對比模式：一次性 vs 定期定額（同崩盤、同總額）──
+    //   一次性於第0月全額進場；定期定額分 per 期投入；兩者總額皆＝amt×per。
+    const cTotal = amt * per
+    const lumpV  = buildCrashN(cTotal, 0,   0,   r1, crashes, months).vals
+    const dcaV   = buildCrashN(0,      amt, per, r1, crashes, months).vals
+    let crossYear = null  // 定期定額首次超越一次性的年份
+    const cData = Array.from({ length: years }, (_, i) => {
+      const y = i + 1, mo = y * 12
+      const lv = lumpV[mo], dv = dcaV[mo]
+      if (crossYear === null && dv > lv) crossYear = y
+      return {
+        year: `${y}年`,
+        '一次性投入': Math.round(real(lv, y)),
+        '定期定額':   Math.round(real(dv, y)),
+        '總投入':     Math.round(real(cTotal, y)),
+      }
+    })
+    const cLastMo    = lastCrash ? lastCrash.when * 12 : 0
+    const crashMarks = activeCrashes.map(c => ({ x: `${c.when}年`, label: `💥-${c.drop}%`, color: 'var(--c-red)' }))
+
     return {
       chartData: data,
       summaryCards: { assetAtLastCrash, bottomAtLastCrash, finalNorm, finalUpper, finalLower, lastCrash },
+      compareData: cData,
+      compareCards: {
+        cTotal,
+        lumpEnd:    real(lumpV[months], years),
+        dcaEnd:     real(dcaV[months], years),
+        lumpBottom: lastCrash ? real(lumpV[cLastMo], lastCrash.when) : 0,
+        dcaBottom:  lastCrash ? real(dcaV[cLastMo], lastCrash.when) : 0,
+        crossYear, crashMarks, lastCrash,
+      },
     }
   }, [ls, amt, per, r1, c1, c2, c3, months, years, realMode, infl])
 
@@ -286,8 +316,8 @@ export default function CrashTab({ state }) {
 
       <Divider />
 
-      {/* 實質購買力切換 */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+      {/* 切換列：實質購買力 + 對比模式 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
         <button onClick={() => setRealMode(v => !v)} style={{
           padding: '5px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
           border: `0.5px solid ${realMode ? 'var(--c-green)' : 'var(--c-border2)'}`,
@@ -295,59 +325,116 @@ export default function CrashTab({ state }) {
           color: realMode ? 'var(--c-green)' : 'var(--c-text2)',
           fontSize: 'var(--font-sm)', fontWeight: realMode ? 600 : 400,
         }}>{realMode ? '✓ 實質購買力（已扣通膨）' : '顯示實質購買力（扣通膨）'}</button>
+        <button onClick={() => setCompareMode(v => !v)} style={{
+          padding: '5px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+          border: `0.5px solid ${compareMode ? 'var(--c-blue)' : 'var(--c-border2)'}`,
+          background: compareMode ? 'var(--c-blue-bg)' : 'var(--c-bg)',
+          color: compareMode ? 'var(--c-blue)' : 'var(--c-text2)',
+          fontSize: 'var(--font-sm)', fontWeight: compareMode ? 600 : 400,
+        }}>{compareMode ? '✓ 一次性 vs 定期定額對比' : '一次性 vs 定期定額對比'}</button>
         {realMode && (
           <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>
-            以年通膨 {(infl * 100).toFixed(1)}% 折現為今日購買力（通膨率於「💰通膨購買力」分頁調整）
+            以年通膨 {(infl * 100).toFixed(1)}% 折現為今日購買力
           </span>
         )}
       </div>
 
-      {/* 摘要卡片 */}
-      <div className="grid3" style={{ gap: 8, marginBottom: 12 }}>
-        <Card label={`正常複利${years}年（無崩盤）${realMode ? '·實質' : ''}`} value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
-        <Card label="最後崩盤當下底部資產"
-          value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
-          sub={summaryCards.lastCrash
-            ? `第${summaryCards.lastCrash.when}年 · 損失 ${fmtM(summaryCards.assetAtLastCrash - summaryCards.bottomAtLastCrash)}（-${summaryCards.lastCrash.drop}%）`
-            : '無啟用崩盤'}
-          accent="#E24B4A" />
-        <Card label={`崩盤情境${years}年後（68%分布區間）${realMode ? '·實質' : ''}`}
-          value={`${fmtM(summaryCards.finalLower)} ~ ${fmtM(summaryCards.finalUpper)}`}
-          sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalUpper)} ~ ${fmtM(summaryCards.finalNorm - summaryCards.finalLower)}`}
-          accent="#BA7517" />
-      </div>
+      {compareMode ? (
+        /* ── 對比模式：一次性 vs 定期定額 ── */
+        amt === 0 ? (
+          <Note type="warn" mt={0}>
+            對比模式需要每月投入金額與期數。請先到「📈 定期定額」分頁設定每月投入與期數，再回來比較。
+          </Note>
+        ) : (
+          <>
+            <div className="grid3" style={{ gap: 8, marginBottom: 12 }}>
+              <Card label={`一次性投入 ${years}年後${realMode ? '·實質' : ''}`}
+                value={fmtM(compareCards.lumpEnd)}
+                sub={compareCards.lastCrash ? `崩盤谷底 ${fmtM(compareCards.lumpBottom)}` : '無啟用崩盤'}
+                accent="#1D9E75" />
+              <Card label={`定期定額 ${years}年後${realMode ? '·實質' : ''}`}
+                value={fmtM(compareCards.dcaEnd)}
+                sub={compareCards.lastCrash ? `崩盤谷底 ${fmtM(compareCards.dcaBottom)}` : '無啟用崩盤'}
+                accent="#378ADD" />
+              <Card label="對比結果"
+                value={compareCards.lumpEnd >= compareCards.dcaEnd
+                  ? `一次性領先 ${fmtM(compareCards.lumpEnd - compareCards.dcaEnd)}`
+                  : `定期定額領先 ${fmtM(compareCards.dcaEnd - compareCards.lumpEnd)}`}
+                sub={compareCards.crossYear ? `定期定額曾於第${compareCards.crossYear}年反超` : '定期定額全程未反超'}
+                accent={compareCards.lumpEnd >= compareCards.dcaEnd ? '#1D9E75' : '#378ADD'} />
+            </div>
 
-      {/* 扇形疊圖 */}
-      <ResponsiveContainer width="100%" height={280}>
-        <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
-          <XAxis dataKey="year" tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} />
-          <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
-          <Tooltip
-            formatter={(v, name) => {
-              if (['fanBase','fanRange'].includes(name)) return null
-              return v !== null ? [fmtM(v), name] : null
-            }}
-            contentStyle={{ fontSize: 'var(--font-sm)', borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }}
-          />
-          <Area type="monotone" dataKey="fanBase"  stackId="fan" stroke="none" fill="transparent" fillOpacity={0} legendType="none" tooltipType="none" />
-          <Area type="monotone" dataKey="fanRange" stackId="fan" stroke="none" fill="#E24B4A" fillOpacity={0.15} legendType="none" tooltipType="none" />
-          <Line type="monotone" dataKey="正常複利" name="正常複利" stroke="#1D9E75" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="分布上緣" name="分布上緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
-          <Line type="monotone" dataKey="中央預測" name="中央預測" stroke="#E24B4A" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="分布下緣" name="分布下緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
-          <Line type="monotone" dataKey="總投入"   name="總投入"   stroke="#888888" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
-        </ComposedChart>
-      </ResponsiveContainer>
+            <InvestChart data={compareData} series={[
+              { key: '一次性投入', label: '一次性投入', color: '#1D9E75', width: 2.5 },
+              { key: '定期定額',   label: '定期定額',   color: '#378ADD', width: 2.5 },
+              { key: '總投入',     label: '總投入（相同）', color: '#888888', dash: '5 4', width: 1.5 },
+            ]} height={260} refLines={compareCards.crashMarks} />
+            <Legend items={[
+              { color: '#1D9E75', label: '一次性投入（第0月全額）' },
+              { color: '#378ADD', label: `定期定額（分${per}期）` },
+              { color: '#888888', label: '總投入（相同）', dash: true },
+            ]} />
 
-      <div style={{ display: 'flex', gap: 14, marginTop: 7, fontSize: 'var(--font-xs)', color: 'var(--c-text3)', flexWrap: 'wrap' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: '#1D9E75', display: 'inline-block' }} />正常複利</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 2, borderTop: '1px dashed #E24B4A', display: 'inline-block' }} />分布上緣</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: '#E24B4A', display: 'inline-block' }} />中央預測</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 2, borderTop: '1px dashed #E24B4A', display: 'inline-block' }} />分布下緣</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 20, height: 8, background: 'rgba(226,75,74,0.15)', border: '1px dashed #E24B4A', display: 'inline-block', borderRadius: 2 }} />68% 分布區間</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 2, borderTop: '2px dashed #888', display: 'inline-block' }} />總投入</span>
-      </div>
+            <Note mt={8}>
+              兩者投入總額相同（{fmtM(compareCards.cTotal)} ＝ 每月 {fmtM(amt)} × {per} 期）：一次性於第 0 月全額進場，定期定額分 {per} 期投入，同一組崩盤套在兩者上。
+              {realMode && ' 數值已扣通膨，為今日購買力。'}
+              {compareCards.dcaEnd >= compareCards.lumpEnd
+                ? ` 此設定下定期定額在 ${years} 年後反而領先 ${fmtM(compareCards.dcaEnd - compareCards.lumpEnd)}——因為崩盤落在投入期內，定期定額在低點買進更多便宜部位。`
+                : ` 此設定下一次性在 ${years} 年後領先 ${fmtM(compareCards.lumpEnd - compareCards.dcaEnd)}（錢待在市場的時間更長）。`}
+              {' '}數學上一次性多數情況下勝出，但<b>把崩盤年份往前挪進投入期（前 {Math.ceil(per/12)} 年）</b>，會看到定期定額的低點買進優勢放大、甚至反超——這正是定期定額面對崩盤的價值所在。
+            </Note>
+          </>
+        )
+      ) : (
+        /* ── 一般模式：中央預測 + 扇形分布 ── */
+        <>
+          <div className="grid3" style={{ gap: 8, marginBottom: 12 }}>
+            <Card label={`正常複利${years}年（無崩盤）${realMode ? '·實質' : ''}`} value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
+            <Card label="最後崩盤當下底部資產"
+              value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
+              sub={summaryCards.lastCrash
+                ? `第${summaryCards.lastCrash.when}年 · 損失 ${fmtM(summaryCards.assetAtLastCrash - summaryCards.bottomAtLastCrash)}（-${summaryCards.lastCrash.drop}%）`
+                : '無啟用崩盤'}
+              accent="#E24B4A" />
+            <Card label={`崩盤情境${years}年後（68%分布區間）${realMode ? '·實質' : ''}`}
+              value={`${fmtM(summaryCards.finalLower)} ~ ${fmtM(summaryCards.finalUpper)}`}
+              sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalUpper)} ~ ${fmtM(summaryCards.finalNorm - summaryCards.finalLower)}`}
+              accent="#BA7517" />
+          </div>
+
+          {/* 扇形疊圖 */}
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
+              <XAxis dataKey="year" tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} />
+              <YAxis tickFormatter={v => fmtM(v)} tick={{ fontSize: 'var(--font-xs)', fill: 'var(--c-text3)' }} tickLine={false} axisLine={false} width={52} />
+              <Tooltip
+                formatter={(v, name) => {
+                  if (['fanBase','fanRange'].includes(name)) return null
+                  return v !== null ? [fmtM(v), name] : null
+                }}
+                contentStyle={{ fontSize: 'var(--font-sm)', borderRadius: 8, border: '0.5px solid var(--c-border)', background: 'var(--c-bg)' }}
+              />
+              <Area type="monotone" dataKey="fanBase"  stackId="fan" stroke="none" fill="transparent" fillOpacity={0} legendType="none" tooltipType="none" />
+              <Area type="monotone" dataKey="fanRange" stackId="fan" stroke="none" fill="#E24B4A" fillOpacity={0.15} legendType="none" tooltipType="none" />
+              <Line type="monotone" dataKey="正常複利" name="正常複利" stroke="#1D9E75" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+              <Line type="monotone" dataKey="分布上緣" name="分布上緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+              <Line type="monotone" dataKey="中央預測" name="中央預測" stroke="#E24B4A" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+              <Line type="monotone" dataKey="分布下緣" name="分布下緣" stroke="#E24B4A" strokeWidth={1} strokeDasharray="3 3" dot={false} />
+              <Line type="monotone" dataKey="總投入"   name="總投入"   stroke="#888888" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+
+          <div style={{ display: 'flex', gap: 14, marginTop: 7, fontSize: 'var(--font-xs)', color: 'var(--c-text3)', flexWrap: 'wrap' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: '#1D9E75', display: 'inline-block' }} />正常複利</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 2, borderTop: '1px dashed #E24B4A', display: 'inline-block' }} />分布上緣</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 3, background: '#E24B4A', display: 'inline-block' }} />中央預測</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 2, borderTop: '1px dashed #E24B4A', display: 'inline-block' }} />分布下緣</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 20, height: 8, background: 'rgba(226,75,74,0.15)', border: '1px dashed #E24B4A', display: 'inline-block', borderRadius: 2 }} />68% 分布區間</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 2, borderTop: '2px dashed #888', display: 'inline-block' }} />總投入</span>
+          </div>
+        </>
+      )}
 
       <Divider />
 

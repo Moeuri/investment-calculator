@@ -2,6 +2,23 @@
 
 const VERSIONS = [
   {
+    ver: 'v2.6',
+    date: '2026-06-30',
+    changes: [
+      '定期定額：新增「下載成果卡（PNG）」——一張濃縮摘要圖，含名目（實質）終值、總投入，與「投資 009816 vs 放床底下被通膨吃掉」的實質淨額對照曲線',
+      '成果卡為程式自繪（原生 canvas、不截圖、不引額外套件），數值以「名目（實質購買力）」並列，括號內為通膨折現後的今日購買力',
+    ],
+  },
+  {
+    ver: 'v2.5',
+    date: '2026-06-30',
+    changes: [
+      '崩盤模擬：新增「一次性 vs 定期定額」對比模式——同一組崩盤、同樣投入總額（一次性＝每月×期數），並排比較兩者的受挫與恢復',
+      '對比模式標出崩盤年份、各自谷底與最終值，並計算定期定額是否反超一次性；可搭配實質購買力切換一起檢視',
+      '教學重點：一次性多數情況勝出，但崩盤若落在投入期內，定期定額低點買進優勢可能放大甚至反超',
+    ],
+  },
+  {
     ver: 'v2.4',
     date: '2026-06-30',
     changes: [
@@ -150,7 +167,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v2.4</div>
+          <div>目前版本：v2.6</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

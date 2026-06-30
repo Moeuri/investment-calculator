@@ -1,6 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import { Card, Note, Slider, PhaseBar, SectionTitle, InvestChart, Legend, Divider } from '../components'
 import { buildNorm, fmtM, fmtPA, toReal, EXP0, EXP1, DIV, TH } from '../utils'
+import { downloadResultCard } from '../resultCard'
 
 const TAX_OPTS = [
   { v: 0,    label: '免稅' },
@@ -84,6 +85,24 @@ export default function DCATab({ state, set }) {
     v9816: Math.round(norm9816[months]),
     v0050: Math.round(norm0050[months] + cash0050[months]),
   })
+
+  // 匯出成果卡 PNG（含 009816 實質 vs「放床底下」被通膨吃掉的對照）
+  function handleExportCard() {
+    const c = ls + amt * per
+    if (c === 0) return
+    const s9816 = [], sMatt = []
+    for (let y = 1; y <= years; y++) {
+      s9816.push(toReal(norm9816[y * 12], infl, y))
+      sMatt.push(toReal(Math.min(c, ls + amt * y * 12), infl, y))
+    }
+    downloadResultCard({
+      amt, ls, per, dr, years, infl,
+      nom9816: norm9816[months], real9816: toReal(norm9816[months], infl, years),
+      nom0050: norm0050[months] + cash0050[months],
+      real0050: toReal(norm0050[months] + cash0050[months], infl, years),
+      cost: c, realCost: toReal(c, infl, years), s9816, sMatt,
+    })
+  }
 
   const modeDesc = (() => {
     if (ls === 0 && amt > 0)  return `純定期定額：每月 ${fmtM(amt)}，共 ${per} 期，總投入 ${fmtM(amt * per)}`
@@ -257,6 +276,20 @@ export default function DCATab({ state, set }) {
           : ` 0050 總回報多出 ${fmtM(total0050 - norm9816End)}。`}
         {rr < 1 && ` 其中 ${fmtM(totalCashReceived)} 為已領出的配息現金（可用於其他投資或生活費）。`}
       </Note>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+        <button onClick={handleExportCard} disabled={cost === 0} style={{
+          padding: '7px 14px', borderRadius: 'var(--radius-sm)',
+          cursor: cost === 0 ? 'not-allowed' : 'pointer',
+          border: `0.5px solid ${cost === 0 ? 'var(--c-border)' : 'var(--c-green)'}`,
+          background: cost === 0 ? 'var(--c-bg2)' : 'var(--c-green-bg)',
+          color: cost === 0 ? 'var(--c-text3)' : 'var(--c-green)',
+          fontSize: 'var(--font-sm)', fontWeight: 600,
+        }}>📥 下載成果卡（PNG）</button>
+        <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>
+          一張濃縮摘要圖：名目（實質）終值＋「投資 vs 放床底下」對照，方便分享
+        </span>
+      </div>
 
       <Divider />
       <SectionTitle>情境快照對比（A / B）</SectionTitle>

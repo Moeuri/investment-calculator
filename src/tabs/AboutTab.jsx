@@ -2,6 +2,14 @@
 
 const VERSIONS = [
   {
+    ver: 'v2.4',
+    date: '2026-06-30',
+    changes: [
+      '定期定額：新增「情境快照 A/B 對比」——可暫存兩組參數（如保守8% vs 樂觀13%）並排比較終值，僅存於本次瀏覽、不上傳',
+      'UI：手機版 Tab bar 右側新增漸層提示，暗示尚有更多分頁可橫向捲動',
+    ],
+  },
+  {
     ver: 'v2.3',
     date: '2026-06-30',
     changes: [
@@ -142,7 +150,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v2.3</div>
+          <div>目前版本：v2.4</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

@@ -108,6 +108,17 @@ html[data-font="large"] {
 /* 0050 vs 009816 比較列 */
 .cmp-row, .cmp-head { display: grid; grid-template-columns: 160px 1fr 1fr; }
 
+/* Tab bar 捲動漸層提示：右側淡出，暗示尚有更多分頁可橫向捲動 */
+.tab-scroll { position: relative; }
+.tab-scroll::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, transparent, var(--c-bg));
+  pointer-events: none;
+}
+
 @media (max-width: 560px) {
   .grid2 { grid-template-columns: 1fr; }
   .grid3, .grid4 { grid-template-columns: repeat(2, 1fr); }

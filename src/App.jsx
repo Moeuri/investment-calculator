@@ -104,7 +104,7 @@ export default function App() {
       }}>
         <div>
           <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v2.3 · Huang Yen-han</div>
+          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v2.4 · Huang Yen-han</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -140,23 +140,25 @@ export default function App() {
       </div>
 
       {/* Tab Bar */}
-      <div style={{
-        display: 'flex', gap: 5, marginBottom: 18,
-        overflowX: 'auto', paddingBottom: 2, WebkitOverflowScrolling: 'touch',
-      }}>
-        {TABS.map(t => {
-          const on = t.id === tab
-          return (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding: '7px 13px', borderRadius: 'var(--radius-sm)',
-              border: `0.5px solid ${on ? 'var(--c-border2)' : 'var(--c-border)'}`,
-              background: on ? 'var(--c-bg3)' : 'var(--c-bg)',
-              color: on ? 'var(--c-text)' : 'var(--c-text3)',
-              fontSize: 'var(--font-sm)', fontWeight: on ? 600 : 400,
-              cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-            }}>{t.label}</button>
-          )
-        })}
+      <div className="tab-scroll" style={{ marginBottom: 18 }}>
+        <div style={{
+          display: 'flex', gap: 5,
+          overflowX: 'auto', paddingBottom: 2, WebkitOverflowScrolling: 'touch',
+        }}>
+          {TABS.map(t => {
+            const on = t.id === tab
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                padding: '7px 13px', borderRadius: 'var(--radius-sm)',
+                border: `0.5px solid ${on ? 'var(--c-border2)' : 'var(--c-border)'}`,
+                background: on ? 'var(--c-bg3)' : 'var(--c-bg)',
+                color: on ? 'var(--c-text)' : 'var(--c-text3)',
+                fontSize: 'var(--font-sm)', fontWeight: on ? 600 : 400,
+                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+              }}>{t.label}</button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Tab Content */}

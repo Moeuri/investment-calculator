@@ -65,6 +65,10 @@ export default function DCATab({ state, set }) {
   // 第 y 年名目值換算今日購買力（未開啟時原樣回傳）
   const real = (v, y) => realMode ? toReal(v, infl, y) : v
 
+  // 情境快照 A/B（記憶體暫存，重新整理即清空）
+  const [snapA, setSnapA] = useState(null)
+  const [snapB, setSnapB] = useState(null)
+
   const activePreset = DR_PRESETS.find(p => p.v === dr)
 
   const { norm9816, norm0050, cash0050 } = useMemo(() => {
@@ -72,6 +76,14 @@ export default function DCATab({ state, set }) {
     const { asset: norm0050, cash: cash0050 } = build0050CashFlow(ls, amt, per, r0t, rr, months)
     return { norm9816, norm0050, cash0050 }
   }, [ls, amt, per, r1, r0t, rr, months])
+
+  // 擷取當前情境（名目終值，與實質切換無關，確保兩組可比）
+  const takeSnap = () => ({
+    dr, amt, ls, per, years,
+    cost: ls + amt * per,
+    v9816: Math.round(norm9816[months]),
+    v0050: Math.round(norm0050[months] + cash0050[months]),
+  })
 
   const modeDesc = (() => {
     if (ls === 0 && amt > 0)  return `純定期定額：每月 ${fmtM(amt)}，共 ${per} 期，總投入 ${fmtM(amt * per)}`
@@ -245,6 +257,73 @@ export default function DCATab({ state, set }) {
           : ` 0050 總回報多出 ${fmtM(total0050 - norm9816End)}。`}
         {rr < 1 && ` 其中 ${fmtM(totalCashReceived)} 為已領出的配息現金（可用於其他投資或生活費）。`}
       </Note>
+
+      <Divider />
+      <SectionTitle>情境快照對比（A / B）</SectionTitle>
+      <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginBottom: 8, lineHeight: 1.6 }}>
+        存下目前參數為 A，調整上方設定後再存 B，即可並排比較兩組情境（如保守 8% vs 樂觀 13%）。僅暫存於本次瀏覽，重新整理即清空。
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+        <button onClick={() => setSnapA(takeSnap())} style={{
+          padding: '6px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+          border: `0.5px solid ${snapA ? '#378ADD' : 'var(--c-border2)'}`,
+          background: snapA ? 'var(--c-blue-bg)' : 'var(--c-bg)',
+          color: snapA ? '#378ADD' : 'var(--c-text2)',
+          fontSize: 'var(--font-sm)', fontWeight: snapA ? 600 : 400,
+        }}>{snapA ? '↻ 更新情境 A' : '📸 存為情境 A'}</button>
+        <button onClick={() => setSnapB(takeSnap())} style={{
+          padding: '6px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+          border: `0.5px solid ${snapB ? '#BA7517' : 'var(--c-border2)'}`,
+          background: snapB ? 'var(--c-orange-bg)' : 'var(--c-bg)',
+          color: snapB ? '#BA7517' : 'var(--c-text2)',
+          fontSize: 'var(--font-sm)', fontWeight: snapB ? 600 : 400,
+        }}>{snapB ? '↻ 更新情境 B' : '📸 存為情境 B'}</button>
+        {(snapA || snapB) && (
+          <button onClick={() => { setSnapA(null); setSnapB(null) }} style={{
+            padding: '6px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+            border: '0.5px solid var(--c-border2)', background: 'var(--c-bg)', color: 'var(--c-text3)',
+            fontSize: 'var(--font-sm)',
+          }}>清除</button>
+        )}
+      </div>
+
+      {snapA && snapB ? (
+        <div style={{ border: '0.5px solid var(--c-border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', background: 'var(--c-bg2)', fontSize: 'var(--font-xs)', fontWeight: 600 }}>
+            <div style={{ padding: '6px 10px', color: 'var(--c-text3)' }}>項目</div>
+            <div style={{ padding: '6px 10px', textAlign: 'right', color: '#378ADD' }}>情境 A</div>
+            <div style={{ padding: '6px 10px', textAlign: 'right', color: '#BA7517' }}>情境 B</div>
+          </div>
+          {[
+            ['年化報酬',    s => `${(s.dr*100).toFixed(1)}%`],
+            ['每月投入',    s => s.amt ? fmtM(s.amt) : '—'],
+            ['一次性投入',  s => s.ls ? fmtM(s.ls) : '—'],
+            ['扣款期數',    s => `${s.per} 期`],
+            ['觀察年限',    s => `${s.years} 年`],
+            ['總投入',      s => fmtM(s.cost)],
+            ['009816 終值', s => fmtM(s.v9816)],
+            ['0050 總回報', s => fmtM(s.v0050)],
+          ].map(([label, fn], i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', fontSize: 'var(--font-sm)', borderTop: '0.5px solid var(--c-border)' }}>
+              <div style={{ padding: '6px 10px', color: 'var(--c-text3)' }}>{label}</div>
+              <div style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--c-text)' }}>{fn(snapA)}</div>
+              <div style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--c-text)' }}>{fn(snapB)}</div>
+            </div>
+          ))}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', fontSize: 'var(--font-sm)', borderTop: '0.5px solid var(--c-border2)', background: 'var(--c-bg2)', fontWeight: 600 }}>
+            <div style={{ padding: '6px 10px', color: 'var(--c-text3)' }}>009816 終值差 (B−A)</div>
+            <div style={{ padding: '6px 10px', textAlign: 'right', color: snapB.v9816 >= snapA.v9816 ? 'var(--c-green)' : 'var(--c-red)' }}>
+              {snapB.v9816 >= snapA.v9816 ? '+' : ''}{fmtM(snapB.v9816 - snapA.v9816)}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Note type="note" mt={0}>
+          {snapA ? '已存情境 A，調整參數後按「存為情境 B」即可並排比較。'
+            : snapB ? '已存情境 B，按「存為情境 A」即可並排比較。'
+            : '尚未建立快照。按上方按鈕存下目前參數。'}
+        </Note>
+      )}
     </div>
   )
 }

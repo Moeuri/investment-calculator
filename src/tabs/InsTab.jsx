@@ -97,42 +97,44 @@ function ProsCons() {
 }
 
 export default function InsTab({ state, set }) {
-  const { dr, per, insPrin, insAnn, insPen } = state
+  const { dr, per, amt, lumpSum, insPrin, insAnn, insPen } = state
   const r1   = dr + 0.01 - EXP1
-  const netP = insPrin * (1 - insPen / 100)
-  const dcaYrs = per / 12  // 解約後分幾年投入（沿用「定期定額」分頁的期數）
+  const ls   = lumpSum || 0
+  const netP = insPrin * (1 - insPen / 100)   // 解約實拿
+  const marketInvested = ls + amt * per        // 你選擇投入大盤的金額（依「定期定額」分頁）
+  const otherFunds = netP - marketInvested     // 解約金中未投入大盤、另作他用的部分
+  const pct = netP > 0 ? Math.round(marketInvested / netP * 100) : 0
+  const partial = marketInvested < netP
 
-  const { chartData, lumpCross, dcaCross } = useMemo(() => {
-    if (insPrin === 0) return { chartData: [], lumpCross: null, dcaCross: null }
+  const { chartData, mktCross } = useMemo(() => {
+    if (insPrin === 0 || marketInvested === 0) return { chartData: [], mktCross: null }
     const months = 240
-    // ③解約後定期定額：一次性解約拿回 netP 現金，分 per 期投入大盤；
-    //   已投入部分用 buildNorm 複利，未投入部分為閒置現金（不生息）。
-    const move   = per > 0 ? netP / per : netP
-    const etfDCA = buildNorm(0, move, per, r1, months)
-
-    let lumpCross = null, dcaCross = null
+    // 大盤線＝「定期定額」分頁的 009816 計畫（一次性 ls ＋ 每月 amt×per）
+    const mkt = buildNorm(ls, amt, per, r1, months)
+    let mktCross = null
     const data = Array.from({ length: 20 }, (_, i) => {
-      const y   = i + 1, mo = y * 12
-      const insT = insPrin + insAnn * y                         // ①維持儲蓄險
-      const lump = netP * Math.pow(1 + r1 / 12, mo)             // ②解約後一次性
-      const idle = Math.max(0, netP - move * Math.min(mo, per)) // ③未投入的閒置現金
-      const dca  = etfDCA[mo] + idle                            // ③解約後定期定額
-      if (!lumpCross && lump > insT) lumpCross = y
-      if (!dcaCross  && dca  > insT) dcaCross  = y
+      const y = i + 1, mo = y * 12
+      const insT = insPrin + insAnn * y
+      const mv   = mkt[mo]
+      if (!mktCross && mv > insT) mktCross = y
       return {
         year: `${y}年`,
-        '儲蓄險總資產':     Math.round(insT),
-        '定期定額轉009816': Math.round(dca),
-        '一次性轉009816':   Math.round(lump),
+        '維持儲蓄險':     Math.round(insT),
+        '投入大盤009816': Math.round(mv),
       }
     })
-    return { chartData: data, lumpCross, dcaCross }
-  }, [insPrin, insAnn, netP, r1, per])
+    return { chartData: data, mktCross }
+  }, [insPrin, insAnn, ls, amt, per, r1, marketInvested])
+
+  // 投入方式描述
+  const planDesc = ls > 0 && amt > 0
+    ? `一次性 ${fmtM(ls)} ＋ 每月 ${fmtM(amt)}×${per}期`
+    : ls > 0 ? `一次性 ${fmtM(ls)}` : `每月 ${fmtM(amt)}×${per}期`
 
   return (
     <div>
       <Note type="info" mt={0}>
-        009816 報酬率與「定期定額」分頁設定同步（目前：{(dr*100).toFixed(1)}%，費後 {fmtPA(r1)}）。
+        報酬率與投入金額（一次性／每月定期定額／期數）皆與「定期定額」分頁同步（目前 009816 費後年化 {fmtPA(r1)}）。
       </Note>
 
       <Divider my={14} />
@@ -156,51 +158,48 @@ export default function InsTab({ state, set }) {
 
       {insPrin === 0 ? (
         <Note type="note" mt={12}>請設定保險本金以顯示試算結果。</Note>
+      ) : marketInvested === 0 ? (
+        <Note type="warn" mt={12}>
+          請到「📈 定期定額」分頁設定投入大盤的金額（一次性投入或每月定期定額×期數），才能與儲蓄險比較。
+        </Note>
       ) : (
         <>
           <Note type="info" mt={12}>
-            三條路徑比較同一筆 {fmtM(insPrin)}：
-            <strong>①維持儲蓄險</strong>（不解約，每年領 {fmtM(insAnn)}）、
-            <strong>②解約後一次性</strong>（馬上全額進場，報酬最快但須承受梭哈波動）、
-            <strong>③解約後定期定額</strong>（一次解約拿回現金，分 {dcaYrs % 1 === 0 ? dcaYrs : dcaYrs.toFixed(1)} 年慢慢投入，未投入部分為閒置現金不生息）。
-            投入年數沿用「定期定額」分頁的期數（{per} 期）。
+            比較兩條路徑：<strong>維持儲蓄險</strong>（不解約，每年領 {fmtM(insAnn)}）
+            vs <strong>投入大盤</strong>（解約後把 {fmtM(marketInvested)} 投進 009816，方式：{planDesc}，於「定期定額」分頁設定）。
+            <br />大盤線<strong>只是你投入大盤的那一部分</strong>，其餘資金（買個股／其他ETF／其他保單／花用）不在此比較——因此這是「資本效率」比較，不是等額比較。
           </Note>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '12px 0' }}>
+          <div className="grid3" style={{ gap: 8, margin: '12px 0' }}>
             <Card label="儲蓄險隱含年化（單利）" value={insAnn > 0 ? fmtPA(insAnn / insPrin) + '/年' : '—'} />
-            <Card label="③定期定額 超越儲蓄險"
-              value={dcaCross ? `第 ${dcaCross} 年` : '20年內未超越'}
-              sub="保守者最關心的交叉點"
-              accent={dcaCross ? 'var(--c-green)' : 'var(--c-red)'} />
-            <Card label="②一次性 超越儲蓄險"
-              value={lumpCross ? `第 ${lumpCross} 年` : '20年內未超越'}
-              accent={lumpCross ? 'var(--c-green)' : 'var(--c-red)'} />
+            <Card label="投入大盤 超越儲蓄險"
+              value={mktCross ? `第 ${mktCross} 年` : '20年內未超越'}
+              sub={mktCross ? (partial ? `只動用解約金的 ${pct}%` : '靠複利追過龜速儲蓄險') : '可加大投入或拉長時間'}
+              accent={mktCross ? 'var(--c-green)' : 'var(--c-red)'} />
+            <Card label="投入大盤金額"
+              value={fmtM(marketInvested)}
+              sub={otherFunds > 0 ? `解約金 ${fmtM(netP)}，其餘 ${fmtM(otherFunds)} 另用` : `解約金 ${fmtM(netP)}`}
+              accent="#378ADD" />
           </div>
 
           <InvestChart data={chartData} series={[
-            { key: '儲蓄險總資產',     label: '①維持儲蓄險',     color: '#BA7517', width: 2   },
-            { key: '定期定額轉009816', label: '③解約後定期定額', color: '#378ADD', width: 2   },
-            { key: '一次性轉009816',   label: '②解約後一次性',   color: '#1D9E75', width: 2.5 },
+            { key: '維持儲蓄險',     label: '維持儲蓄險',      color: '#BA7517', width: 2   },
+            { key: '投入大盤009816', label: '投入大盤 009816', color: '#1D9E75', width: 2.5 },
           ]} height={240}
-            refLines={dcaCross ? [{ x: `${dcaCross}年`, label: '定期定額交叉', color: 'var(--c-green)' }] : []} />
+            refLines={mktCross ? [{ x: `${mktCross}年`, label: '超越儲蓄險', color: 'var(--c-green)' }] : []} />
           <Legend items={[
-            { color: '#BA7517', label: '①維持儲蓄險' },
-            { color: '#378ADD', label: '③解約後定期定額' },
-            { color: '#1D9E75', label: '②解約後一次性' },
+            { color: '#BA7517', label: '維持儲蓄險（整筆）' },
+            { color: '#1D9E75', label: '投入大盤 009816（僅投入部分）' },
           ]} />
 
           <Note mt={8}>
-            保險本金 {fmtM(insPrin)}，年領 {fmtM(insAnn)}
-            {insAnn > 0 ? `（${fmtPA(insAnn/insPrin)} 單利）` : ''}。
+            保險本金 {fmtM(insPrin)}，年領 {fmtM(insAnn)}{insAnn > 0 ? `（${fmtPA(insAnn/insPrin)} 單利）` : ''}。
             {insPen > 0 ? `解約費 ${insPen}%，實際解約金 ${fmtM(netP)}。` : '已過鎖定期、無解約費用。'}
-            {dcaCross
-              ? ` 解約後分 ${dcaYrs % 1 === 0 ? dcaYrs : dcaYrs.toFixed(1)} 年定期定額投入，在第 ${dcaCross} 年總資產超越維持儲蓄險`
-              : ' 解約後定期定額在20年內未超越維持儲蓄險（可調高報酬率或縮短投入年數）'}
-            {dcaCross && dcaCross > dcaYrs ? `（交叉點晚於投入完成的第 ${Math.ceil(dcaYrs)} 年）。` : dcaCross ? '（投入尚未完成就已反超）。' : '。'}
-            {lumpCross
-              ? ` 一次性投入則在第 ${lumpCross} 年超越，但須一開始就承受全額市場波動。`
-              : ' 一次性投入在20年內亦未超越維持儲蓄險。'}
-            {' '}投入完成前未進場的資金為閒置現金、不生息，這是定期定額初期淨值成長較慢的原因。
+            {' '}你選擇把 {fmtM(marketInvested)}（{planDesc}）投入大盤。
+            {mktCross
+              ? ` 第 ${mktCross} 年，投入大盤的這部分就超越「維持儲蓄險整筆」${partial ? `——即使只動用解約金的 ${pct}%，9% 複利仍追過 2% 龜速儲蓄險` : ''}。`
+              : ' 20年內未超越維持儲蓄險（可在定期定額分頁調高每月投入、報酬率，或縮短期數）。'}
+            {otherFunds > 0 ? ` 其餘 ${fmtM(otherFunds)} 你可自由運用（買股／其他ETF／其他保單／花用），不影響此比較。` : ''}
           </Note>
         </>
       )}

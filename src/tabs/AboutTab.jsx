@@ -2,6 +2,15 @@
 
 const VERSIONS = [
   {
+    ver: 'v2.7',
+    date: '2026-06-30',
+    changes: [
+      '儲蓄險 vs 股市：數字試算改為「維持儲蓄險 vs 投入大盤」兩條線。大盤投入金額改從「定期定額」分頁讀取（一次性／每月定期定額），不再用解約金強制等額',
+      '更貼近現實：離開儲蓄險的錢只有一部分進大盤（其餘買個股／其他ETF／其他保單／花用）。呈現「只動用解約金的一部分，靠複利仍追過整筆儲蓄險」的資本效率',
+      '卡片顯示投入大盤金額、佔解約金比例、其餘可自由運用金額，並標出超越維持儲蓄險的年份',
+    ],
+  },
+  {
     ver: 'v2.6.1',
     date: '2026-06-30',
     changes: [
@@ -175,7 +184,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v2.6.1</div>
+          <div>目前版本：v2.7</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

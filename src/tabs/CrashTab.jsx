@@ -37,7 +37,7 @@ const DEFAULT_CRASH = (when, evtIdx) => ({
 })
 
 // ── 崩盤參數面板 ──────────────────────────────────────────────────
-function CrashParamPanel({ c, setC, label, minWhen = 1 }) {
+function CrashParamPanel({ c, setC, label, minWhen = 1, maxWhen = 19 }) {
   function applyEvent(i) {
     setC({ ...c, drop: CRASH_EVENTS[i].drop, type: CRASH_EVENTS[i].type, evtIdx: i })
   }
@@ -73,8 +73,9 @@ function CrashParamPanel({ c, setC, label, minWhen = 1 }) {
             <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', marginBottom: 8 }}>崩盤性質</div>
             <TypeBtn value={c.type} onChange={v => setC({ ...c, type: v, evtIdx: null })} />
           </div>
-          <Slider label="崩盤發生（第幾年）" min={minWhen} max={19} step={1} value={Math.max(c.when, minWhen)}
-            onChange={v => setC({ ...c, when: Math.max(minWhen, v) })}
+          <Slider label="崩盤發生（第幾年）" min={minWhen} max={maxWhen} step={1}
+            value={Math.min(maxWhen, Math.max(c.when, minWhen))}
+            onChange={v => setC({ ...c, when: Math.min(maxWhen, Math.max(minWhen, v)) })}
             fmt={v => `第 ${v} 年`} />
           <Slider label="最大跌幅" min={0} max={99} step={1} value={c.drop}
             onChange={v => setC({ ...c, drop: v, evtIdx: null })}
@@ -180,7 +181,11 @@ function BaselineSection() {
 
 // ── 主元件 ────────────────────────────────────────────────────────
 export default function CrashTab({ state }) {
-  const { amt, per, dr, lumpSum } = state
+  const { amt, dr, lumpSum } = state
+  const years   = state.years ?? 20          // 觀察年限（與定期定額分頁共用全域狀態）
+  const months  = years * 12
+  const maxWhen = years - 1                    // 崩盤最晚發生年份
+  const per = Math.min(state.per, months)
   const r1 = dr + 0.01 - EXP1
   const ls = lumpSum || 0
 
@@ -193,17 +198,17 @@ export default function CrashTab({ state }) {
   const c3Invalid = c3.enabled && ((c1.enabled && c3.when <= c1.when) || (c2.enabled && c3.when <= c2.when))
 
   // 各崩盤的最小可選年份（須晚於前面已啟用的崩盤），與 utils 的同月合併互為防呆
-  const c2Min = Math.min(19, c1.enabled ? c1.when + 1 : 1)
-  const c3Min = Math.min(19, Math.max(c1.enabled ? c1.when + 1 : 1, c2.enabled ? c2.when + 1 : 1))
+  const c2Min = Math.min(maxWhen, c1.enabled ? c1.when + 1 : 1)
+  const c3Min = Math.min(maxWhen, Math.max(c1.enabled ? c1.when + 1 : 1, c2.enabled ? c2.when + 1 : 1))
 
   const { chartData, summaryCards } = useMemo(() => {
-    const norm = buildNorm(ls, amt, per, r1)
+    const norm = buildNorm(ls, amt, per, r1, months)
     const cost = ls + amt * per
     const crashes = [c1, c2, c3]
-    const { vals: crashVals, fanStart } = buildCrashN(ls, amt, per, r1, crashes)
-    const { upper, lower } = calcFan(crashVals, fanStart, MONTH_VOL)
+    const { vals: crashVals, fanStart } = buildCrashN(ls, amt, per, r1, crashes, months)
+    const { upper, lower } = calcFan(crashVals, fanStart, MONTH_VOL, months)
 
-    const data = Array.from({ length: 20 }, (_, i) => {
+    const data = Array.from({ length: years }, (_, i) => {
       const y = i + 1, mo = y * 12
       const cv = crashVals[mo]
       const isAfterFan = mo >= fanStart && fanStart >= 0
@@ -226,15 +231,15 @@ export default function CrashTab({ state }) {
     const lastCrashMo = lastCrash ? lastCrash.when * 12 : 0
     const assetAtLastCrash  = lastCrash ? norm[lastCrashMo] : 0
     const bottomAtLastCrash = lastCrash ? crashVals[lastCrashMo] : 0
-    const finalNorm   = norm[240]
-    const finalUpper  = upper[240]
-    const finalLower  = lower[240]
+    const finalNorm   = norm[months]
+    const finalUpper  = upper[months]
+    const finalLower  = lower[months]
 
     return {
       chartData: data,
       summaryCards: { assetAtLastCrash, bottomAtLastCrash, finalNorm, finalUpper, finalLower, lastCrash },
     }
-  }, [ls, amt, per, r1, c1, c2, c3])
+  }, [ls, amt, per, r1, c1, c2, c3, months, years])
 
   return (
     <div>
@@ -268,23 +273,23 @@ export default function CrashTab({ state }) {
       />
 
       <div style={{ marginBottom: 12 }}>
-        {subTab === 'c1' && <CrashParamPanel c={c1} setC={setC1} label="崩盤一次" minWhen={1} />}
-        {subTab === 'c2' && <CrashParamPanel c={c2} setC={setC2} label="崩盤兩次" minWhen={c2Min} />}
-        {subTab === 'c3' && <CrashParamPanel c={c3} setC={setC3} label="崩盤三次" minWhen={c3Min} />}
+        {subTab === 'c1' && <CrashParamPanel c={c1} setC={setC1} label="崩盤一次" minWhen={1}     maxWhen={maxWhen} />}
+        {subTab === 'c2' && <CrashParamPanel c={c2} setC={setC2} label="崩盤兩次" minWhen={c2Min} maxWhen={maxWhen} />}
+        {subTab === 'c3' && <CrashParamPanel c={c3} setC={setC3} label="崩盤三次" minWhen={c3Min} maxWhen={maxWhen} />}
       </div>
 
       <Divider />
 
       {/* 摘要卡片 */}
       <div className="grid3" style={{ gap: 8, marginBottom: 12 }}>
-        <Card label="正常複利20年（無崩盤）" value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
+        <Card label={`正常複利${years}年（無崩盤）`} value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
         <Card label="最後崩盤當下底部資產"
           value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
           sub={summaryCards.lastCrash
             ? `第${summaryCards.lastCrash.when}年 · 損失 ${fmtM(summaryCards.assetAtLastCrash - summaryCards.bottomAtLastCrash)}（-${summaryCards.lastCrash.drop}%）`
             : '無啟用崩盤'}
           accent="#E24B4A" />
-        <Card label="崩盤情境20年後（68%分布區間）"
+        <Card label={`崩盤情境${years}年後（68%分布區間）`}
           value={`${fmtM(summaryCards.finalLower)} ~ ${fmtM(summaryCards.finalUpper)}`}
           sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalUpper)} ~ ${fmtM(summaryCards.finalNorm - summaryCards.finalLower)}`}
           accent="#BA7517" />

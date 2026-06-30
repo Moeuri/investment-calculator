@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { Card, Note, Slider, PhaseBar, SectionTitle, InvestChart, Legend, Divider } from '../components'
 import { buildNorm, fmtM, fmtPA, EXP0, EXP1, DIV, TH } from '../utils'
 
@@ -21,15 +21,15 @@ const DR_PRESETS = [
 ]
 
 // 0050 配息現金流累積（不再投入）
-function build0050CashFlow(lumpSum, amt, per, annR, reinvestRate) {
+function build0050CashFlow(lumpSum, amt, per, annR, reinvestRate, months = 240) {
   const mr = annR / 12
   const divYield = DIV  // 年化配息率
-  const out = new Float64Array(241)  // 帳面資產（不含已領配息）
-  const cashOut = new Float64Array(241) // 累積已領出配息
+  const out = new Float64Array(months + 1)  // 帳面資產（不含已領配息）
+  const cashOut = new Float64Array(months + 1) // 累積已領出配息
   let v = lumpSum || 0
   let totalCash = 0
 
-  for (let mo = 1; mo <= 240; mo++) {
+  for (let mo = 1; mo <= months; mo++) {
     if (mo <= per) v = (v + amt) * (1 + mr)
     else v = v * (1 + mr)
 
@@ -49,20 +49,29 @@ function build0050CashFlow(lumpSum, amt, per, annR, reinvestRate) {
 }
 
 export default function DCATab({ state, set }) {
-  const { amt, per, dr, tax, lumpSum, reinvestRate } = state
+  const { amt, dr, tax, lumpSum, reinvestRate } = state
+  const years  = state.years ?? 20            // 觀察年限
+  const months = years * 12
+  const infl   = state.infl ?? 0.02           // 年通膨率（沿用全域，於通膨分頁設定）
+  const perMax = months                        // 扣款期數上限＝觀察年限
+  const per    = Math.min(state.per, perMax)   // 有效扣款期數（不超過觀察年限）
   const r1   = dr + 0.01 - EXP1
   const r0t  = dr - EXP0 - DIV * (tax + TH)
   const ls   = lumpSum || 0
   const rr   = reinvestRate !== undefined ? reinvestRate : 1  // 預設100%再投入
   const cost = ls + amt * per
 
+  const [realMode, setRealMode] = useState(false)  // 實質購買力（扣通膨）切換
+  // 折現因子：第 y 年的名目值除以此值＝今日購買力
+  const realDiv = y => realMode ? Math.pow(1 + infl, y) : 1
+
   const activePreset = DR_PRESETS.find(p => p.v === dr)
 
   const { norm9816, norm0050, cash0050 } = useMemo(() => {
-    const norm9816 = buildNorm(ls, amt, per, r1)
-    const { asset: norm0050, cash: cash0050 } = build0050CashFlow(ls, amt, per, r0t, rr)
+    const norm9816 = buildNorm(ls, amt, per, r1, months)
+    const { asset: norm0050, cash: cash0050 } = build0050CashFlow(ls, amt, per, r0t, rr, months)
     return { norm9816, norm0050, cash0050 }
-  }, [ls, amt, per, r1, r0t, rr])
+  }, [ls, amt, per, r1, r0t, rr, months])
 
   const modeDesc = (() => {
     if (ls === 0 && amt > 0)  return `純定期定額：每月 ${fmtM(amt)}，共 ${per} 期，總投入 ${fmtM(amt * per)}`
@@ -74,29 +83,34 @@ export default function DCATab({ state, set }) {
   const showCashFlow = rr < 1  // 只有部分再投入時才顯示現金流線
 
   const chartData = useMemo(() => {
-    return Array.from({ length: 20 }, (_, i) => {
+    return Array.from({ length: years }, (_, i) => {
       const y = i + 1, mo = y * 12
+      const d = realDiv(y)
       const row = {
         year:     `${y}年`,
-        '009816': Math.round(norm9816[mo]),
-        '0050帳面資產': Math.round(norm0050[mo]),
-        '總投入': Math.round(Math.min(cost, ls + amt * mo)),
+        '009816': Math.round(norm9816[mo] / d),
+        '0050帳面資產': Math.round(norm0050[mo] / d),
+        '總投入': Math.round(Math.min(cost, ls + amt * mo) / d),
       }
       if (showCashFlow) {
-        row['0050累積已領配息'] = Math.round(cash0050[mo])
+        row['0050累積已領配息'] = Math.round(cash0050[mo] / d)
       }
       return row
     })
-  }, [norm9816, norm0050, cash0050, cost, ls, amt, showCashFlow])
+  }, [norm9816, norm0050, cash0050, cost, ls, amt, showCashFlow, years, realMode, infl])
 
   const perLabel = per % 12 === 0
     ? `${per}期（${per/12}年）`
     : `${per}期（${Math.floor(per/12)}年${per%12}個月）`
 
-  // 20年累積已領配息
-  const totalCashReceived = cash0050[240]
-  // 0050 20年「總回報」= 帳面資產 + 累積已領配息
-  const total0050 = norm0050[240] + totalCashReceived
+  // 觀察年限末的折現因子（套用於摘要卡）
+  const endDiv = realDiv(years)
+  // 觀察年限末累積已領配息
+  const totalCashReceived = cash0050[months] / endDiv
+  // 0050「總回報」= 帳面資產 + 累積已領配息
+  const norm0050End = norm0050[months] / endDiv
+  const norm9816End = norm9816[months] / endDiv
+  const total0050 = norm0050End + totalCashReceived
 
   return (
     <div>
@@ -115,10 +129,14 @@ export default function DCATab({ state, set }) {
       </div>
 
       {amt > 0 && (
-        <Slider label="定期定額期數" min={6} max={72} step={1}
+        <Slider label="定期定額期數" min={6} max={perMax} step={1}
           value={per} onChange={v => set('per', v)}
           fmt={v => v % 12 === 0 ? `${v}期（${v/12}年）` : `${v}期（${Math.floor(v/12)}年${v%12}個月）`} />
       )}
+
+      <Slider label="觀察年限" min={10} max={40} step={1}
+        value={years} onChange={v => set('years', v)}
+        fmt={v => `${v} 年`} />
 
       <Divider />
 
@@ -141,6 +159,17 @@ export default function DCATab({ state, set }) {
           })}
         </div>
         {activePreset && <Note type="info" mt={8}>📖 {activePreset.note}</Note>}
+        <div style={{ marginTop: 10 }}>
+          <Slider label="自訂年化（覆蓋預設）" min={4} max={20} step={0.5}
+            value={Math.round(dr * 1000) / 10}
+            onChange={v => set('dr', v / 100)}
+            fmt={v => `${v}%`} />
+          {!activePreset && (
+            <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: -4 }}>
+              目前為自訂年化 {(dr * 100).toFixed(1)}%，未對應任一歷史錨點情境。
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 稅率 */}
@@ -170,14 +199,30 @@ export default function DCATab({ state, set }) {
         現實中多數投資人無法做到100%即時再投入，建議設定60–80%較貼近實際情況
       </div>
 
-      {amt > 0 && <PhaseBar per={per} />}
+      {amt > 0 && <PhaseBar per={per} years={years} />}
 
-      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
+      {/* 實質購買力切換 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, margin: '10px 0 2px' }}>
+        <button onClick={() => setRealMode(v => !v)} style={{
+          padding: '5px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+          border: `0.5px solid ${realMode ? 'var(--c-green)' : 'var(--c-border2)'}`,
+          background: realMode ? 'var(--c-green-bg)' : 'var(--c-bg)',
+          color: realMode ? 'var(--c-green)' : 'var(--c-text2)',
+          fontSize: 'var(--font-sm)', fontWeight: realMode ? 600 : 400,
+        }}>{realMode ? '✓ 實質購買力（已扣通膨）' : '顯示實質購買力（扣通膨）'}</button>
+        {realMode && (
+          <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>
+            以年通膨 {(infl * 100).toFixed(1)}% 折現為今日購買力（通膨率於「💰通膨購買力」分頁調整）
+          </span>
+        )}
+      </div>
+
+      <div className="grid3" style={{ gap: 8, margin: '8px 0 10px' }}>
         <Card label="總投入" value={fmtM(cost)} sub={amt > 0 ? perLabel : '一次性'} />
-        <Card label="0050（帳面+已領配息，20年）"
+        <Card label={`0050（帳面+已領配息，${years}年${realMode ? '·實質' : ''}）`}
           value={fmtM(total0050)}
-          sub={`帳面 ${fmtM(norm0050[240])} + 配息 ${fmtM(totalCashReceived)}`} />
-        <Card label="009816（20年）" value={fmtM(norm9816[240])} sub="不配息，無稅摩擦" />
+          sub={`帳面 ${fmtM(norm0050End)} + 配息 ${fmtM(totalCashReceived)}`} />
+        <Card label={`009816（${years}年${realMode ? '·實質' : ''}）`} value={fmtM(norm9816End)} sub="不配息，無稅摩擦" />
       </div>
 
       <InvestChart data={chartData} series={[
@@ -195,11 +240,12 @@ export default function DCATab({ state, set }) {
 
       <Note mt={8}>
         009816費後年化 {fmtPA(r1)}，0050費後稅後年化 {fmtPA(r0t)}（再投入效率 {Math.round(rr*100)}%）。
-        20年後 009816 共 {fmtM(norm9816[240])}，
-        0050帳面 {fmtM(norm0050[240])} + 累積配息 {fmtM(totalCashReceived)} = 總回報 {fmtM(total0050)}。
-        {norm9816[240] > total0050
-          ? ` 009816 總回報多出 ${fmtM(norm9816[240] - total0050)}。`
-          : ` 0050 總回報多出 ${fmtM(total0050 - norm9816[240])}。`}
+        {realMode && ` 以下數字已扣除年通膨 ${(infl*100).toFixed(1)}%，為今日購買力。`}
+        {years}年後 009816 共 {fmtM(norm9816End)}，
+        0050帳面 {fmtM(norm0050End)} + 累積配息 {fmtM(totalCashReceived)} = 總回報 {fmtM(total0050)}。
+        {norm9816End > total0050
+          ? ` 009816 總回報多出 ${fmtM(norm9816End - total0050)}。`
+          : ` 0050 總回報多出 ${fmtM(total0050 - norm9816End)}。`}
         {rr < 1 && ` 其中 ${fmtM(totalCashReceived)} 為已領出的配息現金（可用於其他投資或生活費）。`}
       </Note>
     </div>

@@ -2,6 +2,16 @@
 
 const VERSIONS = [
   {
+    ver: 'v2.1',
+    date: '2026-06-30',
+    changes: [
+      '定期定額：報酬率新增「自訂年化」滑桿（4%–20%），可在六檔歷史錨點之外自由設定，不對應預設時會提示為自訂值',
+      '定期定額＋崩盤模擬：新增「觀察年限」設定（10–40年，預設20年），圖表與摘要可往後延伸；扣款期數上限自動連動觀察年限',
+      '定期定額：新增「實質購買力（扣通膨）」切換，一鍵把圖表與摘要卡換算為今日購買力（沿用通膨分頁的年通膨率）',
+      '計算層：buildCrashN／buildCrashClean／calcFan 及 0050 配息現金流函數改為可變月數，移除寫死的20年（241個月）假設',
+    ],
+  },
+  {
     ver: 'v2.0',
     date: '2026-06-29',
     changes: [
@@ -113,7 +123,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v2.0</div>
+          <div>目前版本：v2.1</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

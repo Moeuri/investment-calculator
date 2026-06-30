@@ -146,9 +146,10 @@ export function EventBtn({ label, sub, modelNote, active, onClick }) {
 }
 
 // ── 相圖區（投入 vs 持有） ────────────────────────
-export function PhaseBar({ per }) {
-  const pct = per / 240
-  const holdYrs = (20 - per / 12).toFixed(1)
+export function PhaseBar({ per, years = 20 }) {
+  const totalMo = years * 12
+  const pct = Math.min(1, per / totalMo)
+  const holdYrs = Math.max(0, years - per / 12).toFixed(1)
   const perLabel = per % 12 === 0 ? `${per / 12}年` : `${Math.floor(per / 12)}年${per % 12}月`
   return (
     <div style={{ display: 'flex', height: 22, borderRadius: 'var(--radius)', overflow: 'hidden', margin: '10px 0', fontSize: 'var(--font-xs)' }}>

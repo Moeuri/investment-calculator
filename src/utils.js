@@ -96,9 +96,10 @@ function algoBmonthly(bottomVal, drop, annR, monthsAfter, trendAtMonth) {
 //   annR: 正常年化報酬率
 //   crashes: [{ when(年), drop, type, enabled }]
 //
-// 回傳：{ vals: Float64Array(241), fanStart: number }
+// 回傳：{ vals: Float64Array(months+1), fanStart: number }
+//   months 預設 240（20年），可傳入更長觀察年限。
 // ─────────────────────────────────────────────────────────────────
-export function buildCrashN(lumpSum, amt, per, annR, crashes) {
+export function buildCrashN(lumpSum, amt, per, annR, crashes, months = 240) {
   const ls = lumpSum || 0
 
   // 篩選出啟用且跌幅>0的崩盤，依時間排序
@@ -123,19 +124,19 @@ export function buildCrashN(lumpSum, amt, per, annR, crashes) {
 
   // 沒有崩盤：直接回傳正常複利
   if (active.length === 0) {
-    return { vals: buildNorm(ls, amt, per, annR), fanStart: -1 }
+    return { vals: buildNorm(ls, amt, per, annR, months), fanStart: -1 }
   }
 
-  return buildCrashClean(ls, amt, per, annR, active)
+  return buildCrashClean(ls, amt, per, annR, active, months)
 }
 
 // ─────────────────────────────────────────────────────────────────
 // 乾淨的逐月遞推版本
 // ─────────────────────────────────────────────────────────────────
-function buildCrashClean(ls, amt, per, annR, active) {
+function buildCrashClean(ls, amt, per, annR, active, months = 240) {
   const mr = annR / 12
 
-  const out = new Float64Array(241)
+  const out = new Float64Array(months + 1)
 
   // 狀態
   let holdPool       = ls          // 持有池（含一次性投入，從第0月開始）
@@ -152,7 +153,7 @@ function buildCrashClean(ls, amt, per, annR, active) {
 
   out[0] = ls                       // 起點 = 一次性投入本金
 
-  for (let mo = 1; mo <= 240; mo++) {
+  for (let mo = 1; mo <= months; mo++) {
     // ── Step 1：先對持有池和崩後批次執行這個月的複利 ──
     holdPool = holdPool * (1 + mr)
     for (const b of postBatches) {
@@ -229,11 +230,11 @@ function buildCrashClean(ls, amt, per, annR, active) {
 // ─────────────────────────────────────────────────────────────────
 // 計算扇形上下緣（對數常態，±1σ，從崩盤點出發）
 // ─────────────────────────────────────────────────────────────────
-export function calcFan(centralVals, fanStartMo, annVol) {
-  const upper = new Float64Array(241)
-  const lower = new Float64Array(241)
-  const start = Math.min(fanStartMo, 240)
-  for (let mo = 0; mo <= 240; mo++) {
+export function calcFan(centralVals, fanStartMo, annVol, months = 240) {
+  const upper = new Float64Array(months + 1)
+  const lower = new Float64Array(months + 1)
+  const start = Math.min(fanStartMo, months)
+  for (let mo = 0; mo <= months; mo++) {
     const c = centralVals[mo]
     if (mo <= start || !isFinite(c)) {
       upper[mo] = c

@@ -1,6 +1,6 @@
 ﻿import { useMemo } from 'react'
 import { Card, Note, Slider, SectionTitle, InvestChart, Legend, Divider } from '../components'
-import { fmtM, fmtPA, EXP1 } from '../utils'
+import { buildNorm, fmtM, fmtPA, EXP1 } from '../utils'
 
 const PROS_CONS = {
   ins: {
@@ -97,22 +97,37 @@ function ProsCons() {
 }
 
 export default function InsTab({ state, set }) {
-  const { dr, insPrin, insAnn, insPen } = state
+  const { dr, per, insPrin, insAnn, insPen } = state
   const r1   = dr + 0.01 - EXP1
   const netP = insPrin * (1 - insPen / 100)
+  const dcaYrs = per / 12  // 解約後分幾年投入（沿用「定期定額」分頁的期數）
 
-  const { chartData, insCross } = useMemo(() => {
-    if (insPrin === 0) return { chartData: [], insCross: null }
-    let cross = null
+  const { chartData, lumpCross, dcaCross } = useMemo(() => {
+    if (insPrin === 0) return { chartData: [], lumpCross: null, dcaCross: null }
+    const months = 240
+    // ③解約後定期定額：一次性解約拿回 netP 現金，分 per 期投入大盤；
+    //   已投入部分用 buildNorm 複利，未投入部分為閒置現金（不生息）。
+    const move   = per > 0 ? netP / per : netP
+    const etfDCA = buildNorm(0, move, per, r1, months)
+
+    let lumpCross = null, dcaCross = null
     const data = Array.from({ length: 20 }, (_, i) => {
-      const y    = i + 1
-      const insT = insPrin + insAnn * y
-      const mkt  = netP * Math.pow(1 + r1 / 12, y * 12)
-      if (!cross && mkt > insT) cross = y
-      return { year: `${y}年`, '儲蓄險總資產': Math.round(insT), '009816': Math.round(mkt) }
+      const y   = i + 1, mo = y * 12
+      const insT = insPrin + insAnn * y                         // ①維持儲蓄險
+      const lump = netP * Math.pow(1 + r1 / 12, mo)             // ②解約後一次性
+      const idle = Math.max(0, netP - move * Math.min(mo, per)) // ③未投入的閒置現金
+      const dca  = etfDCA[mo] + idle                            // ③解約後定期定額
+      if (!lumpCross && lump > insT) lumpCross = y
+      if (!dcaCross  && dca  > insT) dcaCross  = y
+      return {
+        year: `${y}年`,
+        '儲蓄險總資產':     Math.round(insT),
+        '定期定額轉009816': Math.round(dca),
+        '一次性轉009816':   Math.round(lump),
+      }
     })
-    return { chartData: data, insCross: cross }
-  }, [insPrin, insAnn, netP, r1])
+    return { chartData: data, lumpCross, dcaCross }
+  }, [insPrin, insAnn, netP, r1, per])
 
   return (
     <div>
@@ -143,31 +158,49 @@ export default function InsTab({ state, set }) {
         <Note type="note" mt={12}>請設定保險本金以顯示試算結果。</Note>
       ) : (
         <>
+          <Note type="info" mt={12}>
+            三條路徑比較同一筆 {fmtM(insPrin)}：
+            <strong>①維持儲蓄險</strong>（不解約，每年領 {fmtM(insAnn)}）、
+            <strong>②解約後一次性</strong>（馬上全額進場，報酬最快但須承受梭哈波動）、
+            <strong>③解約後定期定額</strong>（一次解約拿回現金，分 {dcaYrs % 1 === 0 ? dcaYrs : dcaYrs.toFixed(1)} 年慢慢投入，未投入部分為閒置現金不生息）。
+            投入年數沿用「定期定額」分頁的期數（{per} 期）。
+          </Note>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: '12px 0' }}>
-            <Card label="隱含年化（單利）" value={insAnn > 0 ? fmtPA(insAnn / insPrin) + '/年' : '—'} />
-            <Card label="20年累積領回" value={fmtM(insAnn * 20)} />
-            <Card label="009816超越年份"
-              value={insCross ? `第 ${insCross} 年` : '20年內未超越'}
-              accent={insCross ? 'var(--c-green)' : 'var(--c-red)'} />
+            <Card label="儲蓄險隱含年化（單利）" value={insAnn > 0 ? fmtPA(insAnn / insPrin) + '/年' : '—'} />
+            <Card label="③定期定額 超越儲蓄險"
+              value={dcaCross ? `第 ${dcaCross} 年` : '20年內未超越'}
+              sub="保守者最關心的交叉點"
+              accent={dcaCross ? 'var(--c-green)' : 'var(--c-red)'} />
+            <Card label="②一次性 超越儲蓄險"
+              value={lumpCross ? `第 ${lumpCross} 年` : '20年內未超越'}
+              accent={lumpCross ? 'var(--c-green)' : 'var(--c-red)'} />
           </div>
 
           <InvestChart data={chartData} series={[
-            { key: '儲蓄險總資產', label: '儲蓄險總資產', color: '#BA7517', width: 2   },
-            { key: '009816',      label: '009816',      color: '#1D9E75', width: 2.5 },
-          ]} height={220}
-            refLines={insCross ? [{ x: `${insCross}年`, label: '黃金交叉', color: 'var(--c-green)' }] : []} />
+            { key: '儲蓄險總資產',     label: '①維持儲蓄險',     color: '#BA7517', width: 2   },
+            { key: '定期定額轉009816', label: '③解約後定期定額', color: '#378ADD', width: 2   },
+            { key: '一次性轉009816',   label: '②解約後一次性',   color: '#1D9E75', width: 2.5 },
+          ]} height={240}
+            refLines={dcaCross ? [{ x: `${dcaCross}年`, label: '定期定額交叉', color: 'var(--c-green)' }] : []} />
           <Legend items={[
-            { color: '#BA7517', label: '儲蓄險總資產' },
-            { color: '#1D9E75', label: '解約轉 009816' },
+            { color: '#BA7517', label: '①維持儲蓄險' },
+            { color: '#378ADD', label: '③解約後定期定額' },
+            { color: '#1D9E75', label: '②解約後一次性' },
           ]} />
 
           <Note mt={8}>
             保險本金 {fmtM(insPrin)}，年領 {fmtM(insAnn)}
             {insAnn > 0 ? `（${fmtPA(insAnn/insPrin)} 單利）` : ''}。
-            {insPen > 0 ? `解約費 ${insPen}%，實際轉入 ${fmtM(netP)}。` : '已過鎖定期無費用。'}
-            {insCross
-              ? ` 009816 在第 ${insCross} 年超越儲蓄險總資產。`
-              : ' 009816 在20年內未超越儲蓄險總資產，可嘗試調高報酬率情境。'}
+            {insPen > 0 ? `解約費 ${insPen}%，實際解約金 ${fmtM(netP)}。` : '已過鎖定期、無解約費用。'}
+            {dcaCross
+              ? ` 解約後分 ${dcaYrs % 1 === 0 ? dcaYrs : dcaYrs.toFixed(1)} 年定期定額投入，在第 ${dcaCross} 年總資產超越維持儲蓄險`
+              : ' 解約後定期定額在20年內未超越維持儲蓄險（可調高報酬率或縮短投入年數）'}
+            {dcaCross && dcaCross > dcaYrs ? `（交叉點晚於投入完成的第 ${Math.ceil(dcaYrs)} 年）。` : dcaCross ? '（投入尚未完成就已反超）。' : '。'}
+            {lumpCross
+              ? ` 一次性投入則在第 ${lumpCross} 年超越，但須一開始就承受全額市場波動。`
+              : ' 一次性投入在20年內亦未超越維持儲蓄險。'}
+            {' '}投入完成前未進場的資金為閒置現金、不生息，這是定期定額初期淨值成長較慢的原因。
           </Note>
         </>
       )}

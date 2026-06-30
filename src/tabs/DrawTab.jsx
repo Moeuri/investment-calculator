@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, Note, Slider, SectionTitle, InvestChart, Legend, Divider } from '../components'
-import { buildNorm, fmtM, fmtPA, EXP1 } from '../utils'
+import { buildNorm, fmtM, fmtPA, toReal, EXP1 } from '../utils'
 
 // 年金現值公式反推退休本金
 // PV = PMT × [1 - (1+r)^-n] / r
@@ -15,6 +15,9 @@ export default function DrawTab({ state, set }) {
   const { amt, per, dr, lumpSum, drawMo, drawRate, retireAfter, drawYears, infl } = state
   const r1 = dr + 0.01 - EXP1
   const ls = lumpSum || 0
+  const inflR = infl || 0.02
+
+  const [realMode, setRealMode] = useState(false)  // 實質購買力（扣通膨）切換，僅作用於提領模擬上半部
 
   // 定期定額結束月份
   const dcaEndMo     = per
@@ -29,23 +32,30 @@ export default function DrawTab({ state, set }) {
   const norm    = useMemo(() => buildNorm(ls, amt, per, r1, maxMo), [ls, amt, per, r1, maxMo])
   const startV  = norm[retireEndMo]
 
-  // 提領模擬
+  // 提領模擬（模擬以名目計算；realMode 僅將「顯示值」折現為今日購買力，不影響耗盡年數）
+  const retireYr = retireAfter || 20
   const { chartData, drawExhaust } = useMemo(() => {
     const mr = drawRate / 12
     let v = startV, exhaust = null
     const pts = []
     const maxYrs = 50
+    // 折現至今日：退休後第 y 年＝距今 retireYr + y 年
+    const disp = (val, y) => realMode ? toReal(Math.max(0, val), inflR, retireYr + y) : Math.max(0, val)
     for (let y = 1; y <= maxYrs; y++) {
       for (let m = 0; m < 12; m++) {
         v = v * (1 + mr) - drawMo
         if (v <= 0 && !exhaust) { exhaust = y; v = 0 }
       }
-      pts.push({ year: `${y}年`, '資產': Math.round(Math.max(0, v)), '零線': 0 })
+      pts.push({ year: `${y}年`, '資產': Math.round(disp(v, y)), '零線': 0 })
       if (v <= 0) break
     }
     while (pts.length < 30) pts.push({ year: `${pts.length+1}年`, '資產': 0, '零線': 0 })
     return { chartData: pts, drawExhaust: exhaust }
-  }, [startV, drawMo, drawRate])
+  }, [startV, drawMo, drawRate, realMode, inflR, retireYr])
+
+  // 退休時資產的顯示值（realMode 時折現為今日購買力；每年提領維持名目，為實際提領現金）
+  const startVDisp = realMode ? toReal(startV, inflR, retireYr) : startV
+  const safeMoDisp = startVDisp * drawRate / 12
 
   // 反推退休本金需求
   const targetYears   = drawYears || 25
@@ -87,9 +97,25 @@ export default function DrawTab({ state, set }) {
         value={drawRate * 100} onChange={v => set('drawRate', v / 100)}
         fmt={v => v.toFixed(1) + '%'} />
 
-      <div className="grid3" style={{ gap: 8, margin: '10px 0' }}>
-        <Card label="退休時總資產" value={fmtM(startV)} sub={`第${retireAfter || 20}年退休`} />
-        <Card label="每年提領" value={fmtM(annualDraw)} sub={`佔起始資產 ${fmtPA(drawPct)}`} />
+      {/* 實質購買力切換（僅作用於提領模擬：退休時資產、提領曲線、安全提領上限） */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, margin: '4px 0 2px' }}>
+        <button onClick={() => setRealMode(v => !v)} style={{
+          padding: '5px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+          border: `0.5px solid ${realMode ? 'var(--c-green)' : 'var(--c-border2)'}`,
+          background: realMode ? 'var(--c-green-bg)' : 'var(--c-bg)',
+          color: realMode ? 'var(--c-green)' : 'var(--c-text2)',
+          fontSize: 'var(--font-sm)', fontWeight: realMode ? 600 : 400,
+        }}>{realMode ? '✓ 實質購買力（已扣通膨）' : '顯示實質購買力（扣通膨）'}</button>
+        {realMode && (
+          <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>
+            退休後資產以年通膨 {(inflR * 100).toFixed(1)}% 折現為今日購買力；每月提領金額仍為名目現金
+          </span>
+        )}
+      </div>
+
+      <div className="grid3" style={{ gap: 8, margin: '8px 0 10px' }}>
+        <Card label={`退休時總資產${realMode ? '·實質' : ''}`} value={fmtM(startVDisp)} sub={`第${retireAfter || 20}年退休`} />
+        <Card label="每年提領（名目）" value={fmtM(annualDraw)} sub={`佔起始資產 ${fmtPA(drawPct)}`} />
         <Card label="資產耗盡年數"
           value={drawExhaust ? `退休後第 ${drawExhaust} 年` : '永續'}
           sub={drawExhaust ? '報酬不足以覆蓋提領' : '報酬率持續覆蓋'}
@@ -110,7 +136,7 @@ export default function DrawTab({ state, set }) {
         ? <Note type="suc" mt={8}>月提領 {drawMo.toLocaleString()} 元可永久持續，資產不歸零。</Note>
         : <Note type="warn" mt={8}>
             以目前提領速度，資產將在退休後第{drawExhaust}年耗盡。
-            安全月提領上限約 {fmtM(startV * drawRate / 12)}/月（4%法則）。
+            安全月提領上限約 {fmtM(safeMoDisp)}/月（4%法則{realMode ? '，今日購買力' : ''}）。
           </Note>}
 
       <Divider />

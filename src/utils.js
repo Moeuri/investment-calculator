@@ -19,6 +19,13 @@ export function fmtF(n)  { return Math.round(n).toLocaleString() + ' 元' }
 export function fmtPA(r) { return (r * 100).toFixed(2) + '%' }
 export function fmtP1(r) { return (r * 100).toFixed(1) + '%' }
 
+// 名目→實質：扣除通膨後的「今日購買力」。
+//   nominal：第 years 年的名目值；infl：年通膨率；years：距今年數。
+//   各分頁的「實質購買力」切換統一呼叫此函數，集中口徑。
+export function toReal(nominal, infl, years) {
+  return nominal / Math.pow(1 + (infl || 0), years)
+}
+
 // ─────────────────────────────────────────────────────────────────
 // 正常複利序列（含一次性投入）
 // 用於基準線、DCA分頁、通膨分頁等

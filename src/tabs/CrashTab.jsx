@@ -1,6 +1,6 @@
 ﻿import { useState, useMemo } from 'react'
 import { Card, Note, SectionTitle, SubTab, Divider, Slider } from '../components'
-import { buildNorm, buildCrashN, calcFan, fmtM, CRASH_EVENTS, EXP1, MONTH_VOL } from '../utils'
+import { buildNorm, buildCrashN, calcFan, fmtM, toReal, CRASH_EVENTS, EXP1, MONTH_VOL } from '../utils'
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Area, ComposedChart,
@@ -185,10 +185,12 @@ export default function CrashTab({ state }) {
   const years   = state.years ?? 20          // 觀察年限（與定期定額分頁共用全域狀態）
   const months  = years * 12
   const maxWhen = years - 1                    // 崩盤最晚發生年份
-  const per = Math.min(state.per, months)
+  const per  = Math.min(state.per, months)
+  const infl = state.infl ?? 0.02              // 年通膨率（沿用全域）
   const r1 = dr + 0.01 - EXP1
   const ls = lumpSum || 0
 
+  const [realMode, setRealMode] = useState(false)  // 實質購買力（扣通膨）切換
   const [subTab, setSubTab] = useState('c1')
   const [c1, setC1] = useState(DEFAULT_CRASH(3,  2))
   const [c2, setC2] = useState({ ...DEFAULT_CRASH(8,  3), enabled: false })
@@ -208,38 +210,42 @@ export default function CrashTab({ state }) {
     const { vals: crashVals, fanStart } = buildCrashN(ls, amt, per, r1, crashes, months)
     const { upper, lower } = calcFan(crashVals, fanStart, MONTH_VOL, months)
 
+    // 第 y 年名目值換算今日購買力（未開啟時原樣回傳）
+    const real = (v, y) => realMode ? toReal(v, infl, y) : v
+
     const data = Array.from({ length: years }, (_, i) => {
       const y = i + 1, mo = y * 12
       const cv = crashVals[mo]
       const isAfterFan = mo >= fanStart && fanStart >= 0
-      const upperVal = isAfterFan ? Math.round(upper[mo]) : null
-      const lowerVal = isAfterFan ? Math.round(lower[mo]) : null
+      const upperVal = isAfterFan ? Math.round(real(upper[mo], y)) : null
+      const lowerVal = isAfterFan ? Math.round(real(lower[mo], y)) : null
       return {
         year: `${y}年`,
-        '正常複利': Math.round(norm[mo]),
-        '中央預測': Math.round(cv),
+        '正常複利': Math.round(real(norm[mo], y)),
+        '中央預測': Math.round(real(cv, y)),
         'fanBase':  lowerVal,
         'fanRange': (upperVal !== null && lowerVal !== null) ? upperVal - lowerVal : null,
         '分布上緣': upperVal,
         '分布下緣': lowerVal,
-        '總投入':   Math.round(Math.min(cost, ls + amt * mo)),
+        '總投入':   Math.round(real(Math.min(cost, ls + amt * mo), y)),
       }
     })
 
     const activeCrashes = crashes.filter(c => c.enabled && c.drop > 0)
     const lastCrash = activeCrashes[activeCrashes.length - 1]
     const lastCrashMo = lastCrash ? lastCrash.when * 12 : 0
-    const assetAtLastCrash  = lastCrash ? norm[lastCrashMo] : 0
-    const bottomAtLastCrash = lastCrash ? crashVals[lastCrashMo] : 0
-    const finalNorm   = norm[months]
-    const finalUpper  = upper[months]
-    const finalLower  = lower[months]
+    const lastWhen    = lastCrash ? lastCrash.when : 0
+    const assetAtLastCrash  = lastCrash ? real(norm[lastCrashMo], lastWhen) : 0
+    const bottomAtLastCrash = lastCrash ? real(crashVals[lastCrashMo], lastWhen) : 0
+    const finalNorm   = real(norm[months], years)
+    const finalUpper  = real(upper[months], years)
+    const finalLower  = real(lower[months], years)
 
     return {
       chartData: data,
       summaryCards: { assetAtLastCrash, bottomAtLastCrash, finalNorm, finalUpper, finalLower, lastCrash },
     }
-  }, [ls, amt, per, r1, c1, c2, c3, months, years])
+  }, [ls, amt, per, r1, c1, c2, c3, months, years, realMode, infl])
 
   return (
     <div>
@@ -280,16 +286,32 @@ export default function CrashTab({ state }) {
 
       <Divider />
 
+      {/* 實質購買力切換 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <button onClick={() => setRealMode(v => !v)} style={{
+          padding: '5px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+          border: `0.5px solid ${realMode ? 'var(--c-green)' : 'var(--c-border2)'}`,
+          background: realMode ? 'var(--c-green-bg)' : 'var(--c-bg)',
+          color: realMode ? 'var(--c-green)' : 'var(--c-text2)',
+          fontSize: 'var(--font-sm)', fontWeight: realMode ? 600 : 400,
+        }}>{realMode ? '✓ 實質購買力（已扣通膨）' : '顯示實質購買力（扣通膨）'}</button>
+        {realMode && (
+          <span style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)' }}>
+            以年通膨 {(infl * 100).toFixed(1)}% 折現為今日購買力（通膨率於「💰通膨購買力」分頁調整）
+          </span>
+        )}
+      </div>
+
       {/* 摘要卡片 */}
       <div className="grid3" style={{ gap: 8, marginBottom: 12 }}>
-        <Card label={`正常複利${years}年（無崩盤）`} value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
+        <Card label={`正常複利${years}年（無崩盤）${realMode ? '·實質' : ''}`} value={fmtM(summaryCards.finalNorm)} sub="009816完美運行基準線" accent="#1D9E75" />
         <Card label="最後崩盤當下底部資產"
           value={summaryCards.lastCrash ? fmtM(summaryCards.bottomAtLastCrash) : '—'}
           sub={summaryCards.lastCrash
             ? `第${summaryCards.lastCrash.when}年 · 損失 ${fmtM(summaryCards.assetAtLastCrash - summaryCards.bottomAtLastCrash)}（-${summaryCards.lastCrash.drop}%）`
             : '無啟用崩盤'}
           accent="#E24B4A" />
-        <Card label={`崩盤情境${years}年後（68%分布區間）`}
+        <Card label={`崩盤情境${years}年後（68%分布區間）${realMode ? '·實質' : ''}`}
           value={`${fmtM(summaryCards.finalLower)} ~ ${fmtM(summaryCards.finalUpper)}`}
           sub={`vs 正常複利差 ${fmtM(summaryCards.finalNorm - summaryCards.finalUpper)} ~ ${fmtM(summaryCards.finalNorm - summaryCards.finalLower)}`}
           accent="#BA7517" />

@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from 'react'
 import { Card, Note, Slider, PhaseBar, SectionTitle, InvestChart, Legend, Divider } from '../components'
-import { buildNorm, fmtM, fmtPA, EXP0, EXP1, DIV, TH } from '../utils'
+import { buildNorm, fmtM, fmtPA, toReal, EXP0, EXP1, DIV, TH } from '../utils'
 
 const TAX_OPTS = [
   { v: 0,    label: '免稅' },
@@ -62,8 +62,8 @@ export default function DCATab({ state, set }) {
   const cost = ls + amt * per
 
   const [realMode, setRealMode] = useState(false)  // 實質購買力（扣通膨）切換
-  // 折現因子：第 y 年的名目值除以此值＝今日購買力
-  const realDiv = y => realMode ? Math.pow(1 + infl, y) : 1
+  // 第 y 年名目值換算今日購買力（未開啟時原樣回傳）
+  const real = (v, y) => realMode ? toReal(v, infl, y) : v
 
   const activePreset = DR_PRESETS.find(p => p.v === dr)
 
@@ -85,15 +85,14 @@ export default function DCATab({ state, set }) {
   const chartData = useMemo(() => {
     return Array.from({ length: years }, (_, i) => {
       const y = i + 1, mo = y * 12
-      const d = realDiv(y)
       const row = {
         year:     `${y}年`,
-        '009816': Math.round(norm9816[mo] / d),
-        '0050帳面資產': Math.round(norm0050[mo] / d),
-        '總投入': Math.round(Math.min(cost, ls + amt * mo) / d),
+        '009816': Math.round(real(norm9816[mo], y)),
+        '0050帳面資產': Math.round(real(norm0050[mo], y)),
+        '總投入': Math.round(real(Math.min(cost, ls + amt * mo), y)),
       }
       if (showCashFlow) {
-        row['0050累積已領配息'] = Math.round(cash0050[mo] / d)
+        row['0050累積已領配息'] = Math.round(real(cash0050[mo], y))
       }
       return row
     })
@@ -103,13 +102,11 @@ export default function DCATab({ state, set }) {
     ? `${per}期（${per/12}年）`
     : `${per}期（${Math.floor(per/12)}年${per%12}個月）`
 
-  // 觀察年限末的折現因子（套用於摘要卡）
-  const endDiv = realDiv(years)
-  // 觀察年限末累積已領配息
-  const totalCashReceived = cash0050[months] / endDiv
+  // 觀察年限末（套用於摘要卡，realMode 時換算今日購買力）
+  const totalCashReceived = real(cash0050[months], years)
   // 0050「總回報」= 帳面資產 + 累積已領配息
-  const norm0050End = norm0050[months] / endDiv
-  const norm9816End = norm9816[months] / endDiv
+  const norm0050End = real(norm0050[months], years)
+  const norm9816End = real(norm9816[months], years)
   const total0050 = norm0050End + totalCashReceived
 
   return (

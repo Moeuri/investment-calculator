@@ -104,7 +104,7 @@ export default function App() {
       }}>
         <div>
           <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-text)' }}>大盤投資計算器</div>
-          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v2.1 · Huang Yen-han</div>
+          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--c-text3)', marginTop: 2 }}>v2.3 · Huang Yen-han</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

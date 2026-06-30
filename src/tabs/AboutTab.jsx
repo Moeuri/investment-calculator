@@ -2,6 +2,14 @@
 
 const VERSIONS = [
   {
+    ver: 'v2.6.1',
+    date: '2026-06-30',
+    changes: [
+      '通膨購買力：修正儲蓄險線——原本只畫「累積已領利息」，漏算了仍持有的本金，使儲蓄險看起來比實際差。改為「儲蓄險實質總值（含本金）」＝本金實質值＋累積利息實質值，與 009816 全資產才是公平比較',
+      '「20年總領回實質價值」卡與利息侵蝕說明維持不變（本就專指領回利息）',
+    ],
+  },
+  {
     ver: 'v2.6',
     date: '2026-06-30',
     changes: [
@@ -167,7 +175,7 @@ export default function AboutTab() {
         <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--c-green)', marginBottom: 4 }}>大盤投資計算器</div>
         <div style={{ fontSize: 'var(--font-md)', color: 'var(--c-text2)', lineHeight: 1.7 }}>
           <div>製作人：Huang Yen-han</div>
-          <div>目前版本：v2.6</div>
+          <div>目前版本：v2.6.1</div>
           <div>適用標的：009816 / 0050 / 0056 / 00878 / 00919</div>
           <div>設計用途：個人及友人大盤投資輔助試算</div>
         </div>

@@ -10,7 +10,7 @@ const INFL_OPTS = [
 ]
 
 export default function InflTab({ state, set }) {
-  const { amt, per, dr, lumpSum, infl, insAnn } = state
+  const { amt, per, dr, lumpSum, infl, insAnn, insPrin } = state
   const r1 = dr + 0.01 - EXP1
   const ls = lumpSum || 0
 
@@ -23,22 +23,24 @@ export default function InflTab({ state, set }) {
       const rv = nv / Math.pow(1 + infl, y)
       const insReal = insAnn / Math.pow(1 + infl, y)
       insRealTotal += insReal
+      // 儲蓄險實質總值 = 仍持有的本金（實質）+ 累積已領利息（實質）
+      const insRealValue = (insPrin || 0) / Math.pow(1 + infl, y) + insRealTotal
       return {
         year: `${y}年`,
         '009816名目': Math.round(nv),
         '009816實質': Math.round(rv),
-        '儲蓄險實質累積': Math.round(insRealTotal),
+        '儲蓄險實質總值': Math.round(insRealValue),
       }
     })
     return { norm, chartData: data, insRealTotal }
-  }, [ls, amt, per, r1, infl, insAnn])
+  }, [ls, amt, per, r1, infl, insAnn, insPrin])
 
   return (
     <div>
       <SectionTitle>通膨調整：實質購買力</SectionTitle>
       <Note type="info" mt={0}>
         以今日物價為基準，換算未來各年資產「等同今日多少購買力」。
-        009816名目、009816實質、儲蓄險年領實質累積三條線同時比較。
+        009816名目、009816實質、儲蓄險實質總值（含本金）三條線同時比較。
       </Note>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0' }}>
@@ -73,12 +75,12 @@ export default function InflTab({ state, set }) {
       <InvestChart data={chartData} series={[
         { key: '009816名目',      label: '009816名目',      color: '#1D9E75', width: 2.5 },
         { key: '009816實質',      label: '009816實質購買力', color: '#5DCAA5', dash: '4 3', width: 2 },
-        { key: '儲蓄險實質累積',  label: '儲蓄險實質累積',  color: '#BA7517', width: 1.5 },
+        { key: '儲蓄險實質總值',  label: '儲蓄險實質總值（含本金）',  color: '#BA7517', width: 1.5 },
       ]} height={230} />
       <Legend items={[
         { color: '#1D9E75', label: '009816名目' },
         { color: '#5DCAA5', label: '009816實質購買力', dash: true },
-        { color: '#BA7517', label: '儲蓄險實質累積' },
+        { color: '#BA7517', label: '儲蓄險實質總值（含本金）' },
       ]} />
 
       <Note mt={8}>
@@ -87,6 +89,7 @@ export default function InflTab({ state, set }) {
         儲蓄險20年名目總領 {fmtM(insAnn * 20)}，
         實質僅 {fmtM(insRealTotal)}，
         縮水 {(100 - insRealTotal / (insAnn * 20) * 100).toFixed(0)}%。
+        {insPrin > 0 && ` 上圖「儲蓄險實質總值」另計入本金 ${fmtM(insPrin)} 的實質值（20年後約 ${fmtM(insPrin / Math.pow(1 + infl, 20))}），同樣隨通膨逐年變薄。`}
       </Note>
     </div>
   )
